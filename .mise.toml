@@ -1,0 +1,14 @@
+# Root mise configuration
+# This is mainly for reference - each project should define its own .mise.toml for isolation
+
+# Uncomment to set global defaults (optional)
+# [tools]
+# python = "3.12"
+# node = "20"
+# "npm:uv" = "latest"
+
+# Environment variables available to all projects (optional)
+# [env]
+# _.file = ".env"
+
+# Note: Individual projects override these settings with their own .mise.toml

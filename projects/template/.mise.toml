@@ -1,0 +1,13 @@
+# mise configuration for [Project Name]
+# This file defines tool versions for this project
+
+[tools]
+python = "3.12"
+"npm:uv" = "latest"
+
+# Uncomment if using Node/TypeScript
+# node = "20"
+
+[env]
+# Load environment variables from .env file
+_.file = ".env"
