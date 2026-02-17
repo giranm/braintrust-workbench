@@ -1,0 +1,75 @@
+# Support Desk Investigator - Docker Compose
+# Based on official Helpdesk Docker setup: https://github.com/frappe/helpdesk/blob/develop/docker/docker-compose.yml
+
+services:
+  # Database
+  mariadb:
+    image: mariadb:11.8
+    container_name: support-desk-mariadb
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --skip-innodb-read-only-compressed
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-123}
+      MARIADB_AUTO_UPGRADE: 1
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - support-desk-net
+
+  # Redis
+  redis:
+    image: redis:6.2-alpine
+    container_name: support-desk-redis
+    networks:
+      - support-desk-net
+
+  # Frappe Bench with Helpdesk
+  frappe:
+    image: frappe/bench:latest
+    container_name: support-desk-frappe
+    platform: linux/amd64
+    entrypoint: bash /workspace/init.sh
+    working_dir: /home/frappe
+    ports:
+      - "${HTTP_PUBLISH_PORT:-8080}:8000"
+      - "9000:9000"
+    volumes:
+      - ./scripts/init.sh:/workspace/init.sh:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - support-desk-net
+
+  # Qdrant - Vector database (for Day 4)
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: support-desk-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - support-desk-net
+    profiles:
+      - tools
+
+networks:
+  support-desk-net:
+    driver: bridge
+
+volumes:
+  mariadb-data:
+  qdrant-data:

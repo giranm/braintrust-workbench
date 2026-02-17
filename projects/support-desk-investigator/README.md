@@ -158,6 +158,8 @@ Current repo contains bootstrap files that will evolve into this structure.
 
 # 5. Running Locally
 
+> **Quick Start**: For step-by-step setup instructions, see **[docs/quickstart.md](docs/quickstart.md)**
+
 ## 5.1 Prerequisites
 
 - Docker + Docker Compose
