@@ -1,180 +1,348 @@
 # Support Desk Investigator
 
-A Braintrust demo showcasing observability and evaluations for LLM-powered support desk agents.
+An end-to-end, locally runnable demo of an **LLM-powered support ticket investigator** designed to showcase:
 
-## Overview
+- Multi-step agent workflows (planning + tool use + verification)
+- Real observability with OpenTelemetry
+- Braintrust-powered trace inspection and evaluation
+- A measurable **“bad → good”** improvement loop
 
-This project showcases **Observability & Evaluations** by demonstrating how to log, monitor, and evaluate LLM-based support agents. Learn how to build custom evaluation metrics, manage test datasets, and track experiments to continuously improve support quality.
+This project is intentionally structured to demonstrate modern LLM engineering practices — not just prompting, but tracing, tooling, and eval-driven iteration.
 
-**Type**: Python
-**Focus**: Observability & Evaluations
+## Table of Contents
 
-## What This Demonstrates
+- [1. Core Concept](#1-core-concept)
+- [2. Architecture Overview](#2-architecture-overview)
+- [3. Technology Stack](#3-technology-stack)
+- [4. Repository Structure](#4-repository-structure)
+- [5. Running Locally](#5-running-locally)
+- [6. Demo: Bad → Good](#6-demo-bad-good)
+- [7. Evaluation Strategy](#7-evaluation-strategy)
+- [8. Variant Design](#8-variant-design)
+- [9. Deterministic Demo Mode](#9-deterministic-demo-mode)
+- [10. Observability Model](#10-observability-model)
+- [11. Security Considerations (Demo Scope)](#11-security-considerations-demo-scope)
+- [12. Roadmap](#12-roadmap)
+- [13. References](#13-references)
+- [14. Why This Project Exists](#14-why-this-project-exists)
 
-- ✅ Custom scorers for domain-specific evaluation (support quality metrics)
-- ✅ Dataset management for consistent evaluation and regression testing
-- ✅ Experiment tracking to compare and improve support agent performance
+# 1. Core Concept
 
-## Prerequisites
+When a support ticket is created:
 
-- [mise](https://mise.jdx.dev/) installed
-- Braintrust account ([sign up](https://www.braintrust.dev/))
-- OpenAI API key (or other LLM provider)
+1. The system ingests the ticket from **Frappe Helpdesk**
+2. A multi-step agent (Google ADK) investigates using tools:
+   - Similar incidents (Qdrant)
+   - Logs
+   - Deploy history
+   - Customer context
+3. It produces:
+   - A customer reply draft
+   - Internal engineering notes
+   - An evidence bundle
+   - Confidence + escalation guidance
+4. Every step is traced with **OpenTelemetry**
+5. Traces are exported to **Braintrust**
+6. Evaluations score the investigation quality
 
-## Quick Start
+You can run the system in:
 
-```bash
-# Clone and navigate to project
-cd projects/support-desk-investigator
+- `VARIANT=baseline` (weak guardrails, shallow retrieval)
+- `VARIANT=improved` (schema enforcement, required tools, better retrieval, confidence gating)
 
-# Install tools
-mise install
+Then compare the results.
 
-# For Python projects
-uv sync
-cp .env.example .env
-# Edit .env with your API keys
+# 2. Architecture Overview
 
-# Run the demo
-uv run python src/main.py
+## Services (Docker Compose)
+
+| Service | Purpose |
+|----------|----------|
+| frappe-helpdesk | Ticket UI + ticket storage |
+| backend | Webhook receiver + tool API + orchestration |
+| agent | Google ADK workflow + LLM calls |
+| qdrant | Vector DB for similar incidents |
+| redis *(optional)* | Async job queue |
+| demo-logs *(optional)* | Deterministic log backend for demos |
+
+## High-Level Flow
+
+Ticket → Webhook → Backend → Agent → Tools → Result → Ticket update  
+Tracing spans emitted throughout → Braintrust
+
+## System diagram
+
+```mermaid
+flowchart TB
+  subgraph input[" "]
+    Frappe["Frappe Helpdesk<br/>(tickets + UI/API)"]
+  end
+  subgraph backend[" "]
+    BackendSvc["Backend Service<br/>(API + tools + jobs)"]
+  end
+  subgraph agent[" "]
+    AgentSvc["Agent Service<br/>(Google ADK)"]
+  end
+  subgraph tools[" "]
+    ToolAPIs["Tool APIs<br/>(in backend)"]
+  end
+  subgraph llm[" "]
+    LLMLayer["LLM Provider Layer<br/>OpenAI / Anthropic"]
+  end
+  subgraph data[" "]
+    Qdrant["Qdrant (Vector DB)<br/>incidents / KB / tickets"]
+  end
+
+  Frappe -->|Webhook| BackendSvc
+  BackendSvc -->|Trigger investigation| AgentSvc
+  AgentSvc -->|Tool calls| ToolAPIs
+  AgentSvc -->|LLM calls| LLMLayer
+  ToolAPIs -->|Retrieval / Logs / Deploys / Customer| Qdrant
+
+  Braintrust["Braintrust (OTel)"]
+  BackendSvc -.->|Tracing| Braintrust
+  AgentSvc -.->|Tracing| Braintrust
 ```
 
-## Project Structure
+# 3. Technology Stack
+
+### Ticketing
+- Frappe Helpdesk (open source)
+
+### Agent Orchestration
+- Google Agent SDK (ADK)
+
+### LLM Providers
+- OpenAI
+- Anthropic
+(abstracted via provider layer)
+
+### Retrieval
+- Qdrant (vector DB)
+
+### Observability
+- OpenTelemetry
+- Braintrust OTel SDK integration
+
+### Runtime
+- Docker + Docker Compose
+
+# 4. Repository Structure
+
+Planned structure:
 
 ```
-support-desk-investigator/
-├── src/
-│   ├── main.py         # Main application
-│   └── eval.py         # Braintrust evaluations
-├── tests/              # Tests
-├── docs/               # Development documentation
-│   ├── planning.md         # Project goals and strategy
-│   ├── implementation.md   # Technical decisions
-│   ├── issues.md           # Known issues and bugs
-│   └── changelog.md        # Version history
-├── .mise.toml          # Tool configuration
-└── pyproject.toml      # Dependencies
+src/
+  backend/
+    api.py
+    tools_api.py
+    frappe_client.py
+  agent/
+    workflow.py
+    tools.py
+    providers.py
+  evals/
+    scorers.py
+    datasets/
+  common/
+    schemas.py
+    tracing.py
+docs/
+  planning.md
+  implementation.md
+  architecture.md
+  issues.md
 ```
 
-## Configuration
+Current repo contains bootstrap files that will evolve into this structure.
 
-Copy `.env.example` to `.env` and configure:
+# 5. Running Locally
 
-```bash
-BRAINTRUST_API_KEY=your-key-here
-OPENAI_API_KEY=your-key-here
-```
+## 5.1 Prerequisites
 
-## Running
+- Docker + Docker Compose
+- Braintrust account + API key
+- OpenAI and/or Anthropic API key
 
-### Main Application
+## 5.2 Environment Setup
 
-```bash
-# Python
-uv run python src/main.py
-```
-
-### Evaluations
-
-```bash
-# Run Braintrust evaluations
-uv run python src/eval.py
-
-# View results at: https://www.braintrust.dev/app
-```
-
-### Tests
-
-```bash
-# Python
-uv run pytest
-```
-
-## How It Works
-
-1. **Support Agent**: Processes customer inquiries using an LLM with Braintrust logging for full observability
-2. **Custom Scorers**: Evaluates response quality, tone, empathy, and resolution effectiveness
-3. **Experiment Tracking**: Compares different prompts, models, and parameters to improve performance
-
-## Braintrust Integration
-
-This project uses Braintrust for:
-
-- **Observability**: Logs all LLM interactions with full trace data for debugging and monitoring
-- **Custom Metrics**: Evaluates support quality with domain-specific scorers (accuracy, empathy, resolution)
-- **Experiment Management**: Compares variants to optimize support agent performance
-
-### Key Metrics
-
-- **Response Quality**: Accuracy, helpfulness, and completeness (target: >0.8)
-- **Tone & Empathy**: Professional and empathetic communication (target: >0.85)
-- **Resolution Rate**: Ability to solve or escalate appropriately (target: >0.75)
-
-## Example Output
+Create `.env`:
 
 ```
-Processing support ticket: "My payment failed but I was charged"
-Agent Response: "I understand how frustrating this must be..."
-Metrics:
-  - Quality Score: 0.87
-  - Empathy Score: 0.91
-  - Resolution Score: 0.82
-
-View full trace at: https://www.braintrust.dev/app/...
+BRAINTRUST_API_KEY=...
+BRAINTRUST_PROJECT=Support Desk Investigator
+OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+VARIANT=baseline
 ```
 
-### Braintrust Dashboard
+## 5.3 Start All Services
 
-View detailed experiment results, metric trends, and trace logs in the Braintrust web interface.
+```
+docker compose up --build
+```
 
-## Customization
+Expected local endpoints (example):
 
-### Changing Evaluation Metrics
+- Frappe Helpdesk: http://localhost:8080
+- Backend API: http://localhost:8000
+- Agent Service: http://localhost:8001
+- Qdrant: http://localhost:6333
 
-Edit `src/eval.py` to add or modify custom scorers based on your support quality criteria.
+# 6. Demo: Bad → Good
 
-### Adding New Support Scenarios
+## Step 1: Baseline
 
-Extend the test dataset with new ticket types and expected response patterns.
+Run:
 
-## References
+```
+VARIANT=baseline docker compose up --build
+```
 
-### Braintrust Resources
-- **[Official Docs](https://www.braintrust.dev/docs)**: API reference, guides, concepts
-  - [Getting Started](https://www.braintrust.dev/docs/getting-started)
-  - [Evaluations](https://www.braintrust.dev/docs/guides/evals)
-  - [Logging](https://www.braintrust.dev/docs/guides/logging)
-  - [Python SDK](https://www.braintrust.dev/docs/reference/python)
-- **[Cookbook](https://github.com/braintrustdata/braintrust-cookbook)**: Practical examples and tutorials
+Create a ticket like:
 
-### Related Resources
-- [LLM Evaluation Best Practices](https://www.braintrust.dev/docs/guides/evals#best-practices)
-- [Custom Scorers Guide](https://www.braintrust.dev/docs/guides/evals#custom-scorers)
+“Customer reports intermittent 502 on checkout.”
 
-## Documentation
+Expected behavior:
+- Weak investigation
+- Possibly no evidence bundle
+- May hallucinate root cause
+- Overconfident output
 
-See the `docs/` directory for:
-- **[planning.md](./docs/planning.md)**: Project goals, scope, and implementation plan
-- **[implementation.md](./docs/implementation.md)**: Technical decisions and progress
-- **[issues.md](./docs/issues.md)**: Known issues and resolutions
-- **[changelog.md](./docs/changelog.md)**: Version history
+Open Braintrust:
+- Inspect trace
+- Observe tool usage (or lack thereof)
 
-## Learn More
+## Step 2: Improved
 
-- **Braintrust Docs**: https://www.braintrust.dev/docs
-- **Braintrust Cookbook**: https://github.com/braintrustdata/braintrust-cookbook
-- **Braintrust Community**: https://www.braintrust.dev/community
+Stop and restart with:
 
-## Troubleshooting
+```
+VARIANT=improved docker compose up --build
+```
 
-### Issue: API Key Not Found
+Recreate or replay the same ticket.
 
-**Solution**: Ensure `.env` file exists and contains valid `BRAINTRUST_API_KEY` and `OPENAI_API_KEY`
+Expected improvements:
+- Evidence references included
+- Required tools invoked
+- Structured JSON output
+- Confidence gating
+- Cleaner internal notes
 
-### Issue: Module Import Errors
+Compare trace spans + eval scores.
 
-**Solution**: Run `uv sync` to install all dependencies
+# 7. Evaluation Strategy
 
-## License
+Two evaluation modes:
 
-MIT - See [LICENSE](../../LICENSE)
+## 7.1 Offline Regression Eval
+
+- Uses fixed dataset of tickets
+- Deterministic tool outputs (record/replay mode)
+- Compares baseline vs improved variants
+
+Scorers include:
+- Schema validity
+- Evidence grounding
+- Required tool usage
+- Helpfulness / tone (LLM-as-judge)
+
+## 7.2 Online Sampling Eval
+
+- Scores a subset of real ticket investigations
+- Monitors drift and regressions
+
+# 8. Variant Design
+
+The variant toggle is configuration-based (not branch-based).
+
+### Baseline
+- Minimal schema
+- Shallow retrieval (low top-k)
+- No tool requirements
+- No escalation logic
+
+### Improved
+- Strict output schema
+- Required evidence bundle
+- Required tool invocation rules
+- Higher retrieval depth
+- Confidence + escalation policy
+
+# 9. Deterministic Demo Mode
+
+For stable demos:
+
+```
+RECORD_MODE=record
+RECORD_MODE=replay
+```
+
+Record mode:
+- Saves tool responses to fixtures
+
+Replay mode:
+- Serves responses from fixtures
+- Ensures repeatable runs for eval comparison
+
+# 10. Observability Model
+
+Every investigation produces:
+
+- A root trace (ticket.id)
+- Spans for:
+  - triage
+  - each tool call
+  - each LLM call
+  - verification step
+  - finalize step
+
+Span attributes include:
+- variant
+- ticket.id
+- tool.name
+- llm.provider
+- llm.model
+- latency
+- error flags
+
+Exported via Braintrust OTel SDK integration.
+
+# 11. Security Considerations (Demo Scope)
+
+- Do not expose API keys in tickets
+- Redact sensitive tokens in logs
+- Keep `.env` out of version control
+- Safe mode toggle for external calls
+
+# 12. Roadmap
+
+- [ ] Docker Compose full integration
+- [ ] Backend webhook + tool endpoints
+- [ ] ADK workflow implementation
+- [ ] Qdrant ingestion pipeline
+- [ ] OpenTelemetry instrumentation
+- [ ] Braintrust exporter wiring
+- [ ] Variant toggles
+- [ ] Offline eval runner
+- [ ] Demo fixtures
+
+# 13. References
+
+- Frappe Helpdesk: https://github.com/frappe/helpdesk
+- Google ADK: https://google.github.io/adk-docs/
+- Braintrust OTel Integration: https://www.braintrust.dev/docs/integrations/sdk-integrations/opentelemetry
+- Qdrant: https://qdrant.tech/
+
+# 14. Why This Project Exists
+
+This is not just a chatbot demo.
+
+It is a demonstration of:
+- How to build multi-step AI systems responsibly
+- How to observe and debug them
+- How to prevent regressions with evals
+- How to move from “vibes” to measurable quality
+
+The goal is to make the improvement visible, reproducible, and defensible.
