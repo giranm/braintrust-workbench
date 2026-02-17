@@ -55,6 +55,11 @@ npm run dev
 │   ├── main.py         # Main application
 │   └── eval.py         # Braintrust evaluations
 ├── tests/              # Tests
+├── docs/               # Development documentation
+│   ├── planning.md         # Project goals and strategy
+│   ├── implementation.md   # Technical decisions
+│   ├── issues.md           # Known issues and bugs
+│   └── changelog.md        # Version history
 ├── .mise.toml          # Tool configuration
 └── pyproject.toml      # Dependencies
 ```
@@ -153,6 +158,14 @@ This project uses Braintrust for:
 
 ### Related Resources
 - [Other relevant resources]
+
+## Documentation
+
+See the `docs/` directory for:
+- **[planning.md](./docs/planning.md)**: Project goals, scope, and implementation plan
+- **[implementation.md](./docs/implementation.md)**: Technical decisions and progress
+- **[issues.md](./docs/issues.md)**: Known issues and resolutions
+- **[changelog.md](./docs/changelog.md)**: Version history
 
 ## Learn More
 

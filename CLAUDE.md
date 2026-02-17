@@ -21,6 +21,11 @@ braintrust-workbench/
         ├── .mise.toml      # Project-specific tool versions
         ├── CLAUDE.md       # Project-specific guidance
         ├── README.md       # Project documentation
+        ├── docs/           # Development documentation
+        │   ├── planning.md
+        │   ├── implementation.md
+        │   ├── issues.md
+        │   └── changelog.md
         └── ...
 ```
 
@@ -89,10 +94,18 @@ npm install           # or pnpm install
 ### Project-Specific Guidance
 
 When working in a specific project:
-1. Always read `projects/<project-name>/CLAUDE.md` first
+1. **Read documentation first**:
+   - `projects/<project-name>/CLAUDE.md` - Project overview
+   - `projects/<project-name>/docs/planning.md` - Goals and strategy
+   - `projects/<project-name>/docs/issues.md` - Known problems
+   - `projects/<project-name>/docs/implementation.md` - Technical context
 2. Follow the project's specific patterns and requirements
 3. Reference the Braintrust cookbook for eval/observability patterns
 4. Maintain isolation - don't cross-pollinate dependencies
+5. **Document as you go**:
+   - Update `docs/implementation.md` with decisions
+   - Log issues in `docs/issues.md`
+   - Update `docs/changelog.md` after changes
 
 ## Braintrust Integration
 
@@ -168,6 +181,7 @@ npm test
 - Configuration files (`.mise.toml`, `pyproject.toml`, `package.json`)
 - Lock files (`uv.lock`, `package-lock.json`)
 - Documentation (README.md, CLAUDE.md)
+- **Development docs** (`docs/planning.md`, `docs/implementation.md`, `docs/issues.md`, `docs/changelog.md`)
 - Environment templates (`.env.example`)
 
 ### What NOT to Commit
@@ -176,6 +190,41 @@ npm test
 - Build artifacts (`dist/`, `build/`, `__pycache__/`)
 - IDE-specific files (unless agreed upon)
 - Braintrust local cache/state
+
+## Documentation Workflow
+
+Each project has a `docs/` directory for development documentation:
+
+### Planning (`docs/planning.md`)
+- Project goals and scope
+- Implementation strategy
+- Success criteria
+- **Read before starting work**
+
+### Implementation (`docs/implementation.md`)
+- Technical decisions and rationale
+- Architecture notes
+- Braintrust integration details
+- **Update as you make decisions**
+
+### Issues (`docs/issues.md`)
+- Known bugs and workarounds
+- Technical debt
+- **Check before starting, update when finding issues**
+
+### Changelog (`docs/changelog.md`)
+- Version history
+- Notable changes
+- Eval metric improvements
+- **Update after completing features**
+
+### Why Document in Version Control?
+
+- ✅ Context persists across sessions
+- ✅ AI assistants (Claude Code/ChatGPT Codex etc) can reference it
+- ✅ Decisions are tracked with rationale
+- ✅ Issues and resolutions are recorded
+- ✅ Project history is preserved
 
 ## Best Practices
 

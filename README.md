@@ -12,7 +12,11 @@ This repository contains isolated demo projects that demonstrate various Braintr
 braintrust-workbench/
 ├── projects/          # Individual demo projects
 │   ├── template/      # Template for new projects
+│   │   ├── docs/      # Documentation templates
+│   │   └── ...
 │   └── [demos]/       # Your showcase projects
+│       ├── docs/      # Planning, implementation, issues
+│       └── ...
 └── scripts/           # Utility scripts
 ```
 

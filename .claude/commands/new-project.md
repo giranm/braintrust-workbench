@@ -19,6 +19,7 @@ When invoked, this skill will:
 
 2. **Create project structure** from template:
    - Copy template files to `projects/<project-name>/`
+   - Copy `docs/` directory with planning and tracking templates
    - Replace all placeholders with user-provided values
    - Generate appropriate project files based on type
 

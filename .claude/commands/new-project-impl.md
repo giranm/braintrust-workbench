@@ -72,11 +72,14 @@ copy_file("projects/template/.mise.toml", f"{project_path}/.mise.toml")
 copy_file("projects/template/.env.example", f"{project_path}/.env.example")
 copy_file("projects/template/README.md", f"{project_path}/README.md")
 copy_file("projects/template/CLAUDE.md", f"{project_path}/CLAUDE.md")
+
+# Copy docs directory
+copy_directory("projects/template/docs/", f"{project_path}/docs/")
 ```
 
 ### 4. Replace Template Placeholders
 
-For each copied file, replace:
+For each copied file (including docs/), replace:
 
 ```python
 replacements = {
@@ -87,7 +90,13 @@ replacements = {
     "[description of the demo]": user_description.lower(),
     "[e.g., LLM Evaluation, Prompt Engineering, A/B Testing, etc.]": user_focus,
     "[Describe what this project demonstrates about Braintrust]": f"Demonstrates {user_focus} using Braintrust",
+    "[Date]": datetime.now().strftime("%Y-%m-%d"),
+    "[YYYY-MM-DD]": datetime.now().strftime("%Y-%m-%d"),
 }
+
+# Apply to all files including:
+# - README.md, CLAUDE.md
+# - docs/planning.md, docs/implementation.md, docs/issues.md, docs/changelog.md
 
 # For features, ask for 2-3 key patterns
 # Replace [Feature/pattern 1], [Feature/pattern 2], etc.

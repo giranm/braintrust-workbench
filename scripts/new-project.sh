@@ -93,6 +93,11 @@ print_status "Copying template files..."
 cp -r "$TEMPLATE_DIR"/* "$TARGET_DIR/"
 cp "$TEMPLATE_DIR/.mise.toml" "$TARGET_DIR/"
 
+# Copy docs directory
+if [ -d "$TEMPLATE_DIR/docs" ]; then
+    cp -r "$TEMPLATE_DIR/docs" "$TARGET_DIR/"
+fi
+
 # Customize based on project type
 cd "$TARGET_DIR"
 
@@ -314,6 +319,16 @@ sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" README.md && rm README.md.bak
 
 # Update CLAUDE.md with project name
 sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" CLAUDE.md && rm CLAUDE.md.bak
+
+# Update docs files with project name
+if [ -d "docs" ]; then
+    for doc_file in docs/*.md; do
+        if [ -f "$doc_file" ]; then
+            sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" "$doc_file" && rm "${doc_file}.bak"
+            sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" "$doc_file" && rm "${doc_file}.bak"
+        fi
+    done
+fi
 
 print_status "Project created successfully!"
 echo ""

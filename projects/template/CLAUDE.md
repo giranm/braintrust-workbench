@@ -20,8 +20,13 @@
 │   ├── __init__.py
 │   ├── main.py         # Main application
 │   └── eval.py         # Braintrust evaluations
-└── tests/
-    └── test_main.py    # Tests
+├── tests/
+│   └── test_main.py    # Tests
+└── docs/               # Development documentation
+    ├── planning.md         # Project goals and strategy
+    ├── implementation.md   # Technical decisions and notes
+    ├── issues.md           # Bugs and known issues
+    └── changelog.md        # Version history
 ```
 
 ## Technology Stack
@@ -101,13 +106,26 @@ Evaluation metrics:
 
 When working on this project:
 
-1. **Read this file first** to understand the project structure
+1. **Read documentation first**:
+   - This file (CLAUDE.md) for project overview
+   - `docs/planning.md` for goals and strategy
+   - `docs/issues.md` for known problems
+   - `docs/implementation.md` for technical context
+
 2. **Reference Braintrust resources**:
    - Official docs: https://www.braintrust.dev/docs (for API reference and concepts)
    - Cookbook: https://github.com/braintrustdata/braintrust-cookbook (for examples)
-3. **Maintain isolation**: Use `mise` tools, don't install globally
-4. **Run evals frequently**: After code changes, run `src/eval.py`
-5. **Update documentation**: Keep README and this file in sync
+
+3. **During development**:
+   - Maintain isolation: Use `mise` tools, don't install globally
+   - Run evals frequently: After code changes, run `src/eval.py`
+   - Document decisions: Update `docs/implementation.md` with technical choices
+   - Track issues: Log bugs in `docs/issues.md`
+
+4. **After changes**:
+   - Update `docs/changelog.md` with notable changes
+   - Update README if user-facing features changed
+   - Move resolved issues in `docs/issues.md`
 
 ## Expected Outputs
 
@@ -184,3 +202,12 @@ uv run python -c "from braintrust import init_logger; print('Connected!')"
 - Reference Braintrust docs (https://www.braintrust.dev/docs) for API usage
 - Reference cookbook (https://github.com/braintrustdata/braintrust-cookbook) for examples
 - Keep code simple and well-documented for showcase purposes
+
+### Using Project Documentation
+
+The `docs/` folder contains critical context:
+- **Before coding**: Read `planning.md` and `issues.md`
+- **During coding**: Update `implementation.md` with decisions
+- **After coding**: Update `changelog.md` and resolve issues in `issues.md`
+
+This documentation is in version control and helps maintain context across sessions.
