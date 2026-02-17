@@ -66,12 +66,32 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - VARIANT=${VARIANT:-baseline}
+      - AGENT_URL=${AGENT_URL:-http://agent:8001}
     volumes:
       - ./src:/app/src:ro
     networks:
       - support-desk-net
     depends_on:
       - frappe
+
+  # Agent - Investigation workflow service
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: support-desk-agent
+    ports:
+      - "8001:8001"
+    environment:
+      - BRAINTRUST_API_KEY=${BRAINTRUST_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - VARIANT=${VARIANT:-baseline}
+      - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
+    volumes:
+      - ./src:/app/src:ro
+    networks:
+      - support-desk-net
 
   # Qdrant - Vector database (for Day 4)
   qdrant:

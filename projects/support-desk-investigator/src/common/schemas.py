@@ -25,6 +25,16 @@ class TicketStatus(str, Enum):
     CLOSED = "Closed"
 
 
+class ActionType(str, Enum):
+    """Action types for investigation recommendations."""
+
+    ESCALATE = "escalate"
+    REQUEST_INFO = "request_info"
+    SUGGEST_RESOLUTION = "suggest_resolution"
+    UPDATE_STATUS = "update_status"
+    ADD_TAG = "add_tag"
+
+
 class CaseFile(BaseModel):
     """Normalized case file from Frappe ticket.
 
@@ -54,18 +64,17 @@ class Evidence(BaseModel):
 
     source: str = Field(..., description="Evidence source (logs, incidents, etc.)")
     content: str = Field(..., description="Evidence content or description")
-    timestamp: Optional[datetime] = Field(None, description="When evidence was found")
-    relevance_score: Optional[float] = Field(
-        None, ge=0.0, le=1.0, description="Relevance score (0-1)"
-    )
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score (0-1)")
+    timestamp: datetime = Field(..., description="When evidence was found")
+    metadata: dict = Field(default_factory=dict, description="Additional evidence metadata")
 
 
 class Action(BaseModel):
     """Recommended action from investigation."""
 
-    description: str = Field(..., description="Action description")
-    priority: str = Field(..., description="Action priority (low/medium/high)")
-    assignee: Optional[str] = Field(None, description="Suggested assignee")
+    type: ActionType = Field(..., description="Type of action to take")
+    reason: str = Field(..., description="Why this action is recommended")
+    metadata: dict = Field(default_factory=dict, description="Additional action metadata")
 
 
 class InvestigationResult(BaseModel):

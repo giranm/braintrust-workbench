@@ -1,14 +1,19 @@
 """Webhook endpoints for receiving ticket events from Frappe."""
 
 import logging
+import os
 from datetime import datetime
 
+import httpx
 from fastapi import APIRouter, HTTPException, Request
 
 from ...common.schemas import CaseFile, TicketPriority, TicketStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Agent service URL
+AGENT_URL = os.getenv("AGENT_URL", "http://agent:8001")
 
 
 @router.post("/frappe")
@@ -40,13 +45,34 @@ async def receive_frappe_webhook(request: Request):
 
         logger.info(f"✅ Normalized ticket {case_file.ticket_id}")
 
-        # TODO: Trigger agent investigation (Day 3)
-        # For now, just acknowledge receipt
-        return {
-            "status": "received",
-            "ticket_id": case_file.ticket_id,
-            "message": "Ticket received, investigation will begin soon",
-        }
+        # Trigger agent investigation
+        investigation_result = await _trigger_investigation(case_file)
+
+        if investigation_result:
+            logger.info(
+                f"✅ Investigation complete for {case_file.ticket_id} "
+                f"(confidence={investigation_result.confidence:.0%}, "
+                f"escalate={investigation_result.should_escalate})"
+            )
+            # TODO Day 4: Post results back to Frappe
+            # For now, just log the results
+            logger.info(f"📝 Customer reply: {investigation_result.customer_reply[:100]}...")
+            logger.info(f"📝 Internal notes: {investigation_result.internal_notes[:100]}...")
+
+            return {
+                "status": "investigated",
+                "ticket_id": case_file.ticket_id,
+                "confidence": investigation_result.confidence,
+                "should_escalate": investigation_result.should_escalate,
+                "investigation_time_ms": investigation_result.investigation_time_ms,
+            }
+        else:
+            # Investigation failed, acknowledge receipt only
+            return {
+                "status": "received",
+                "ticket_id": case_file.ticket_id,
+                "message": "Ticket received, investigation pending",
+            }
 
     except Exception as e:
         logger.error(f"❌ Error processing webhook: {e}")
@@ -132,6 +158,37 @@ def _normalize_frappe_ticket(payload: dict) -> CaseFile:
         tags=tags,
         metadata=payload,  # Store full payload for reference
     )
+
+
+async def _trigger_investigation(case_file: CaseFile):
+    """Trigger investigation by calling agent service.
+
+    Args:
+        case_file: Normalized ticket data
+
+    Returns:
+        InvestigationResult or None if failed
+    """
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            logger.info(f"🤖 Triggering investigation for {case_file.ticket_id}")
+            response = await client.post(
+                f"{AGENT_URL}/investigate",
+                json={"case_file": case_file.model_dump(mode='json')},
+            )
+            response.raise_for_status()
+            result_data = response.json()
+
+            # Import here to avoid circular dependency
+            from ...common.schemas import InvestigationResult
+            return InvestigationResult(**result_data)
+
+    except httpx.HTTPError as e:
+        logger.error(f"❌ Failed to trigger investigation: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"❌ Unexpected error during investigation: {e}", exc_info=True)
+        return None
 
 
 @router.get("/health")
