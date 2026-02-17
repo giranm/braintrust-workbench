@@ -44,6 +44,7 @@ services:
       - "9000:9000"
     volumes:
       - ./scripts/init.sh:/workspace/init.sh:ro
+      - ./scripts/seed-db.sql:/workspace/seed-db.sql:ro
     depends_on:
       mariadb:
         condition: service_healthy
@@ -51,6 +52,26 @@ services:
         condition: service_started
     networks:
       - support-desk-net
+
+  # Backend - API service for webhooks and tools
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: support-desk-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - BRAINTRUST_API_KEY=${BRAINTRUST_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - VARIANT=${VARIANT:-baseline}
+    volumes:
+      - ./src:/app/src:ro
+    networks:
+      - support-desk-net
+    depends_on:
+      - frappe
 
   # Qdrant - Vector database (for Day 4)
   qdrant:

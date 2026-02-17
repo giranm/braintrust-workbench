@@ -52,6 +52,23 @@ else
 
     bench use "$SITE_NAME"
 
+    echo "🌱 Seeding database with initial configuration..."
+    # Apply seed data (webhooks, demo data, etc.)
+    if [ -f "/workspace/seed-db.sql" ]; then
+        # Get the database name from site config
+        DB_NAME=$(cat "$BENCH_DIR/sites/$SITE_NAME/site_config.json" | grep -o '"db_name": *"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+
+        if [ -n "$DB_NAME" ]; then
+            echo "📊 Applying seed data to database: $DB_NAME"
+            mariadb -h mariadb -u root -p123 "$DB_NAME" < /workspace/seed-db.sql
+            echo "✅ Seed data applied successfully"
+        else
+            echo "⚠️  Could not determine database name, skipping seed data"
+        fi
+    else
+        echo "⚠️  Seed script not found at /workspace/seed-db.sql"
+    fi
+
     echo "✅ Initialization complete!"
     bench start
 fi

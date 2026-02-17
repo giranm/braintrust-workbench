@@ -74,11 +74,88 @@ frappe (bench) → web server (port 8000) + socketio (port 9000)
 - Development mode enabled for easy debugging
 - No Host header required (works directly at localhost:8080)
 
-**Next steps (Day 2)**:
-- Create backend service (FastAPI) with webhook receiver
-- Configure Frappe webhooks for ticket events
-- Implement CaseFile schema and storage
-- Build tool API routes (ticket/logs/incidents/deploys/customer)
+**Next steps (Day 3)**:
+- Create Agent service with Google ADK
+- Implement investigation workflow (triage → gather → verify → finalize)
+- Connect agent to backend tool APIs
+- Implement agent → backend communication
+
+---
+
+### ✅ Day 2: Backend Service & Tool APIs (COMPLETED)
+
+**Date**: 2026-02-17
+
+**What was implemented**:
+- FastAPI backend service with webhooks and tool endpoints
+- CaseFile schema for normalized ticket data
+- Webhook receiver for Frappe ticket events
+- Tool API endpoints with mock data:
+  - `GET /tools/ticket/{id}` - Ticket details
+  - `POST /tools/logs/query` - Log queries
+  - `POST /tools/incidents/search` - Similar incident search
+  - `GET /tools/deploys/recent` - Recent deployments
+  - `GET /tools/customer/{id}` - Customer information
+- Docker containerization for backend service
+
+**Files created**:
+- `src/common/schemas.py` - Common data models (CaseFile, InvestigationResult, Evidence, Action)
+- `src/backend/app.py` - FastAPI application
+- `src/backend/routes/webhooks.py` - Webhook endpoints
+- `src/backend/routes/tools.py` - Tool API endpoints with mock data
+- `Dockerfile.backend` - Backend service container
+- Updated `docker-compose.yml` - Added backend service
+- Updated `pyproject.toml` - Added FastAPI, uvicorn, httpx dependencies
+
+**Technical decisions**:
+- FastAPI for async/await support and auto-generated OpenAPI docs
+- Pydantic models for strict schema validation
+- Mock data for Day 2 (will connect to real systems in Day 3-4)
+- Webhook normalization: Frappe format → CaseFile schema
+- Tool endpoints return structured JSON for agent consumption
+- Backend depends on Frappe service (waits for it to be healthy)
+
+**Service endpoints**:
+- Backend API: http://localhost:8000
+- API docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/health
+- Webhooks: http://localhost:8000/webhooks/*
+- Tools: http://localhost:8000/tools/*
+
+**Testing**:
+- ✅ Backend service builds successfully
+- ✅ All endpoints responding with 200 OK
+- ✅ Health checks working
+- ✅ Webhook receiver accepting payloads
+- ✅ Tool endpoints returning mock data
+- ✅ OpenAPI documentation generated
+- ✅ End-to-end verification (fresh deployment):
+  - docker compose down -v → up
+  - Webhooks automatically created via seed script
+  - Test ticket created in Frappe UI
+  - Backend received webhook with all 9 fields
+  - Successfully normalized to CaseFile format
+
+**Mock data implemented**:
+- Ticket: Checkout 502 error scenario
+- Logs: Mock ERROR logs with 502 patterns
+- Incidents: Similar past incidents with resolutions
+- Deploys: Recent deployments to checkout/payment services
+- Customer: Enterprise customer profile
+
+**Automated configuration**:
+- `scripts/seed-db.sql` - Database seed script with webhook configuration
+- Automatically applied during first-time initialization
+- Creates two webhooks:
+  - HD Ticket - Creation (after_insert)
+  - HD Ticket - Update (on_update)
+- Both webhooks send 9 fields: name, subject, description, status, priority, contact, customer, creation, modified
+
+**Known characteristics**:
+- Tool endpoints use mock data (Day 4 will connect to Qdrant, real log systems)
+- Webhook receiver acknowledges but doesn't trigger investigation yet (Day 3)
+- No Frappe API client yet (will add when posting results back)
+- Webhooks are automatically configured via seed script (no manual UI setup needed)
 
 ---
 
@@ -198,18 +275,18 @@ Optional:
 - [x] Quick start documentation
 
 ### Backend Service (Day 2)
-- [ ] Backend skeleton (FastAPI)
-- [ ] Webhook endpoint: `POST /webhooks/frappe`
-- [ ] CaseFile schema and storage
-- [ ] Frappe API client helper
-- [ ] Add backend to docker-compose
-- [ ] Configure Frappe webhook in UI
+- [x] Backend skeleton (FastAPI)
+- [x] Webhook endpoint: `POST /webhooks/frappe`
+- [x] CaseFile schema and storage
+- [ ] Frappe API client helper (deferred to Day 3 - when posting results back)
+- [x] Add backend to docker-compose
+- [x] Configure Frappe webhook (automated via seed-db.sql)
 
 ### Tool System (Day 2-4)
-- [ ] Tool API routes (ticket/logs/incidents/deploys/customer)
-- [ ] Qdrant collection + ingestion script
-- [ ] Mock logs/deploys/customer data
-- [ ] Tool endpoint testing
+- [x] Tool API routes (ticket/logs/incidents/deploys/customer) - with mock data
+- [ ] Qdrant collection + ingestion script (Day 4)
+- [x] Mock logs/deploys/customer data
+- [x] Tool endpoint testing
 
 ### Agent Service (Day 3)
 - [ ] ADK agent skeleton

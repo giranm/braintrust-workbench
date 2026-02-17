@@ -53,9 +53,13 @@ Open your browser to: **http://localhost:8080**
   - Web server: Port 8080
   - Socketio: Port 9000
   - Includes: Frappe v16, Telephony app, Helpdesk app
+- **Backend API** (`http://localhost:8000`) - FastAPI service for webhooks and tools
+  - Webhook receiver: POST /webhooks/frappe
+  - Tool endpoints: /tools/*
+  - API docs: http://localhost:8000/docs
 - **MariaDB 11.8** - Persistent database storage
 - **Redis 6.2** - Cache and queue backend
-- **Qdrant** - Vector DB (starts with `--profile tools`, not needed for Day 1)
+- **Qdrant** - Vector DB (starts with `--profile tools`, not needed yet)
 
 ## Useful Commands
 
