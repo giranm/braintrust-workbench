@@ -1,0 +1,9 @@
+# mise configuration for Support Desk Investigator
+# This file defines tool versions for this project
+
+[tools]
+python = "3.12"
+
+[env]
+# Load environment variables from .env file
+_.file = ".env"

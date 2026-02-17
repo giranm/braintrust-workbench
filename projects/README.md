@@ -4,7 +4,19 @@ This directory contains individual Braintrust demo projects. Each project is iso
 
 ## Available Projects
 
-<!-- Add your projects here as you create them -->
+### [Support Desk Investigator](./support-desk-investigator/)
+
+**Type**: Python
+**Focus**: Observability & Evaluations for LLM-powered support desk agents
+
+Demonstrates how to log, monitor, and evaluate support agent quality with custom scorers, dataset management, and experiment tracking.
+
+Key features:
+- Custom scorers for domain-specific evaluation (support quality metrics)
+- Dataset management for consistent evaluation and regression testing
+- Experiment tracking to compare and improve support agent performance
+
+See [project README](./support-desk-investigator/README.md) for details.
 
 ### Template
 
