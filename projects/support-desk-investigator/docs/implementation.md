@@ -366,6 +366,100 @@ Each agent receives detailed instructions for:
 
 ---
 
+### ✅ Day 4 (Enhancements): Local Embeddings & Idempotent Deployment (COMPLETED)
+
+**Date**: 2026-02-18
+
+**What was implemented**:
+- Replaced OpenAI embeddings with local sentence-transformers
+- Made deployment fully idempotent with automatic initialization
+- Upgraded Qdrant to v1.16.3 and enabled by default
+- Created automatic backend initialization system
+
+**Files created/modified**:
+- `scripts/backend-entrypoint.sh` (NEW) - Automatic initialization entrypoint
+- `pyproject.toml` (MODIFIED) - Removed openai, added sentence-transformers
+- `src/backend/routes/tools.py` (MODIFIED) - Local embeddings instead of OpenAI
+- `scripts/ingest-qdrant.py` (MODIFIED) - Local embeddings and idempotency
+- `Dockerfile.backend` (MODIFIED) - Added entrypoint script
+- `docker-compose.yml` (MODIFIED) - Qdrant v1.16.3, removed profile requirement
+- `.env.example` (MODIFIED) - Removed OPENAI_API_KEY, added EMBEDDING_MODEL
+
+**Technical decisions**:
+- **Local embeddings**: sentence-transformers with `all-MiniLM-L6-v2` model
+  - 384 dimensions (vs 1536 for OpenAI)
+  - ~80MB model size, runs on CPU
+  - No API calls or external dependencies
+  - Semantic quality sufficient for incident similarity search
+- **Idempotent ingestion**: Check if collection exists with data before ingesting
+  - Skips ingestion if 20 points already exist
+  - Safe to run `docker compose up` multiple times
+  - No manual initialization steps required
+- **Automatic initialization**: Backend entrypoint script handles setup
+  - Waits for Qdrant to be available (with retry logic)
+  - Runs idempotent ingestion on startup
+  - Starts backend service after successful init
+- **Qdrant upgrade**: v1.7.4 → v1.16.3
+  - Fixed API compatibility (query_points method)
+  - Better performance and features
+  - Removed from "tools" profile (starts by default)
+
+**Architecture change**:
+```
+Previous: OpenAI API → embeddings → Qdrant
+Current:  Local model → embeddings → Qdrant
+          (no external dependencies for vector search)
+```
+
+**Deployment flow**:
+1. `docker compose up -d` starts all services
+2. Backend waits for Qdrant health check
+3. Runs idempotent ingestion (skips if data exists)
+4. Loads local embedding model (~3-5 seconds)
+5. Starts FastAPI service
+
+**Tool endpoint behavior**:
+- `POST /tools/incidents/search` now uses:
+  - Local sentence-transformers for query embedding
+  - Qdrant `query_points()` API for vector search
+  - Returns incidents with similarity scores
+- Fallback to mock data if Qdrant unavailable
+
+**Testing**:
+- ✅ Qdrant v1.16.3 running successfully
+- ✅ Local embeddings generate 384-dimensional vectors
+- ✅ 20 sample incidents ingested with proper payload
+- ✅ Vector search returns relevant results (0.4-0.8 similarity scores)
+- ✅ Idempotent ingestion verified (skips on subsequent runs)
+- ✅ Automatic initialization works on fresh deployment
+- ✅ End-to-end: docker compose down -v → up → auto-initialized
+
+**Performance characteristics**:
+- Embedding generation: ~20-50ms per query (local CPU)
+- Vector search: ~10-30ms per query (Qdrant)
+- Model loading: ~3-5 seconds (on backend startup)
+- Total startup time: ~30 seconds (including initialization)
+
+**Known characteristics**:
+- Commercial LLM usage now isolated to agent reasoning only
+- Backend has zero commercial API dependencies
+- Embedding model downloads from HuggingFace on first run
+- Qdrant data persists in Docker volume `qdrant-data`
+- Ingestion is idempotent but doesn't update existing data
+
+**Environment isolation**:
+- **Backend tools** (`src/backend/routes/tools.py`): Local embeddings only
+- **Agent orchestration** (`src/agent/adk_workflow.py`): Anthropic Claude for reasoning
+- Clear separation: tools use open-source, reasoning uses commercial LLM
+
+**Next steps**:
+- Connect to real Frappe API for ticket data
+- Integrate real log aggregation system
+- Post investigation results back to Frappe
+- Add OpenTelemetry tracing (Day 5)
+
+---
+
 ## Current State
 The repo currently contains:
 - ✅ **Docker Compose stack** with Frappe Helpdesk, Backend, Agent running

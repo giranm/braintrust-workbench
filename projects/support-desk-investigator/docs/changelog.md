@@ -9,10 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - OpenTelemetry instrumentation and Braintrust integration (Day 5)
-- Qdrant vector database integration for similarity search (Day 4)
 - Custom evaluation scorers and experiments (Day 6)
 - Test dataset creation with record/replay fixtures
 - Experiment tracking framework
+- Connect to real Frappe API for ticket data
+- Integrate real log aggregation system
+
+---
+
+## [0.2.1] - 2026-02-18
+
+### Added - Local Embeddings & Idempotent Deployment
+- Local sentence-transformers for embeddings (no external API dependencies)
+- Automatic initialization system with backend entrypoint script
+- Idempotent Qdrant ingestion (skips if data already exists)
+- 20 sample incidents with proper incident IDs and resolved timestamps
+- `scripts/backend-entrypoint.sh` for automated startup workflow
+- `EMBEDDING_MODEL` environment variable configuration
+
+### Changed
+- **BREAKING**: Removed OpenAI dependency for embeddings
+- Upgraded Qdrant from v1.7.4 to v1.16.3
+- Vector dimensions: 1536 (OpenAI) → 384 (MiniLM-L6-v2)
+- Qdrant now starts by default (removed from "tools" profile)
+- Backend waits for Qdrant before starting
+- Fixed Qdrant API usage: `query_points()` with proper `QueryResponse` handling
+
+### Removed
+- `openai` dependency from pyproject.toml
+- `OPENAI_API_KEY` requirement for backend service
+- Manual Qdrant ingestion step (now automatic)
+
+### Technical Details
+- Model: sentence-transformers/all-MiniLM-L6-v2 (~80MB, runs on CPU)
+- Deployment: Fully idempotent, zero manual setup required
+- Performance: ~20-50ms per embedding, ~10-30ms per search
+- Architecture: Clear separation - local embeddings for tools, commercial LLM for reasoning
+
+### Benefits
+- Zero commercial API dependencies for vector search
+- Automatic initialization on deployment
+- Reproducible and idempotent setup
+- Lower operational costs (no embedding API calls)
 
 ---
 

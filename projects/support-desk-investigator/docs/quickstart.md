@@ -6,7 +6,7 @@ Get the Support Desk Investigator demo running in minutes.
 
 - Docker and Docker Compose installed
 - 4GB+ RAM available
-- Ports 8080, 6333, 6334 free
+- Ports 8080, 8000, 8001, 6333, 6334 free
 
 ## Step 1: Start Services
 
@@ -17,18 +17,27 @@ Get the Support Desk Investigator demo running in minutes.
 
 This will:
 - Start Frappe Helpdesk, MariaDB, Redis
+- Start Qdrant vector database
+- Start Backend API service (with automatic Qdrant initialization)
+- Start Agent service
 - Initialize Frappe bench and install apps (first run takes 5-10 minutes)
 - Create site and configure admin user
 
-**First startup**: The initialization takes 5-10 minutes as it clones Frappe, installs dependencies, and sets up the Helpdesk app. You can monitor progress with:
+**First startup**: The initialization takes 5-10 minutes as it clones Frappe, installs dependencies, and sets up the Helpdesk app. Backend will automatically initialize Qdrant with sample data. You can monitor progress with:
 
 ```bash
+# Watch Frappe initialization
 docker compose logs -f frappe
+
+# Watch backend initialization (Qdrant ingestion)
+docker compose logs -f backend
 ```
 
-Look for the message: `✅ Initialization complete!` followed by the web server starting.
+Look for these messages:
+- Frappe: `✅ Initialization complete!` followed by web server starting
+- Backend: `✅ Initialization complete!` followed by backend service starting
 
-**Subsequent startups**: Much faster (~30 seconds) as the bench already exists.
+**Subsequent startups**: Much faster (~30 seconds) as the bench and Qdrant data already exist.
 
 ## Step 2: Access Frappe Helpdesk
 
@@ -55,11 +64,18 @@ Open your browser to: **http://localhost:8080**
   - Includes: Frappe v16, Telephony app, Helpdesk app
 - **Backend API** (`http://localhost:8000`) - FastAPI service for webhooks and tools
   - Webhook receiver: POST /webhooks/frappe
-  - Tool endpoints: /tools/*
+  - Tool endpoints: /tools/* (incident search, logs, deploys, customer)
   - API docs: http://localhost:8000/docs
+  - Automatic initialization: Waits for Qdrant, ingests sample data
+- **Agent Service** (`http://localhost:8001`) - ADK-based investigation workflow
+  - Investigation endpoint: POST /investigate
+  - 4-phase workflow: Triage → Gather → Verify → Finalize
+  - Uses Claude via Google ADK for reasoning
+- **Qdrant v1.16.3** (`http://localhost:6333`) - Vector database for incident similarity search
+  - Automatically initialized with 20 sample incidents
+  - Uses local sentence-transformers embeddings (no API calls)
 - **MariaDB 11.8** - Persistent database storage
 - **Redis 6.2** - Cache and queue backend
-- **Qdrant** - Vector DB (starts with `--profile tools`, not needed yet)
 
 ## Useful Commands
 

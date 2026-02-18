@@ -67,12 +67,18 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - VARIANT=${VARIANT:-baseline}
       - AGENT_URL=${AGENT_URL:-http://agent:8001}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - FRAPPE_URL=${FRAPPE_URL:-http://frappe:8000}
+      - FRAPPE_API_KEY=${FRAPPE_API_KEY:-Administrator}
+      - FRAPPE_API_SECRET=${FRAPPE_API_SECRET:-admin123}
     volumes:
       - ./src:/app/src:ro
     networks:
       - support-desk-net
     depends_on:
       - frappe
+      - qdrant
 
   # Agent - Investigation workflow service
   agent:
@@ -94,9 +100,9 @@ services:
     networks:
       - support-desk-net
 
-  # Qdrant - Vector database (for Day 4)
+  # Qdrant - Vector database for incident similarity search
   qdrant:
-    image: qdrant/qdrant:v1.7.4
+    image: qdrant/qdrant:v1.16.3
     container_name: support-desk-qdrant
     ports:
       - "6333:6333"
@@ -105,8 +111,6 @@ services:
       - qdrant-data:/qdrant/storage
     networks:
       - support-desk-net
-    profiles:
-      - tools
 
 networks:
   support-desk-net:

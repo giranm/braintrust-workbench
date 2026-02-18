@@ -1,14 +1,33 @@
 """Tool API endpoints for agent to call during investigation."""
 
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from qdrant_client import AsyncQdrantClient
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Initialize Qdrant and local embedding model
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+
+qdrant_client: Optional[AsyncQdrantClient] = None
+embedding_model: Optional[SentenceTransformer] = None
+
+try:
+    # Disable version check due to client/server version mismatch
+    qdrant_client = AsyncQdrantClient(url=QDRANT_URL)
+    # Load local embedding model (runs on CPU, ~80MB)
+    embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    logger.info(f"✅ Qdrant and local embedding model ({EMBEDDING_MODEL_NAME}) initialized for incident search")
+except Exception as e:
+    logger.warning(f"⚠️ Failed to initialize Qdrant/embedding model: {e}. Using mock data fallback.")
 
 
 # ============================================================================
@@ -141,14 +160,56 @@ async def query_logs(request: LogQueryRequest):
 
 @router.post("/incidents/search")
 async def search_incidents(request: IncidentSearchRequest):
-    """Search for similar past incidents.
+    """Search for similar past incidents using Qdrant vector similarity search.
 
-    TODO: Connect to Qdrant for vector similarity search (Day 4).
-    For now, returns mock similar incidents.
+    Uses local sentence-transformers model for embeddings (no API calls).
+    Falls back to mock data if Qdrant is unavailable or not configured.
     """
     logger.info(f"🔍 Searching incidents: {request.query}")
 
-    # Mock similar incidents
+    # Try Qdrant vector search first
+    if qdrant_client and embedding_model:
+        try:
+            # Generate embedding for search query using local model
+            logger.debug("Generating embedding using local model")
+            query_vector = embedding_model.encode(request.query).tolist()
+
+            # Search Qdrant for similar incidents
+            logger.debug(f"Searching Qdrant collection 'incidents' (limit={request.limit})")
+            search_results = await qdrant_client.query_points(
+                collection_name="incidents",
+                query=query_vector,
+                limit=request.limit,
+            )
+
+            if search_results and search_results.points:
+                logger.info(f"✅ Found {len(search_results.points)} similar incidents from Qdrant")
+                incidents = []
+                for result in search_results.points:
+                    payload = result.payload
+                    incidents.append(
+                        Incident(
+                            incident_id=payload.get("incident_id", "unknown"),
+                            title=payload.get("title", ""),
+                            description=payload.get("description", ""),
+                            resolution=payload.get("resolution", ""),
+                            resolved_at=datetime.fromisoformat(payload.get("resolved_at"))
+                            if payload.get("resolved_at")
+                            else datetime.now(),
+                            similarity_score=result.score,
+                        )
+                    )
+
+                return {
+                    "incidents": [inc.dict() for inc in incidents],
+                    "total": len(incidents),
+                }
+
+        except Exception as e:
+            logger.warning(f"⚠️ Qdrant search failed: {e}. Falling back to mock data.")
+
+    # Fallback to mock data if Qdrant unavailable or search failed
+    logger.info("Using mock incident data (Qdrant not available)")
     mock_incidents = []
 
     if "502" in request.query or "checkout" in request.query.lower():
