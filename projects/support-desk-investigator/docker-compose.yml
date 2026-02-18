@@ -86,6 +86,7 @@ services:
       - BRAINTRUST_API_KEY=${BRAINTRUST_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ADK_MODEL=${ADK_MODEL:-claude-haiku-4-5-20251001}
       - VARIANT=${VARIANT:-baseline}
       - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
     volumes:

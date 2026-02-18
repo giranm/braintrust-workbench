@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from src.common.schemas import CaseFile, InvestigationResult
-from src.agent.workflow import InvestigationWorkflow
+from src.agent.adk_workflow import ADKInvestigationWorkflow
 
 # Configure logging
 logging.basicConfig(
@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Global workflow instance
-workflow: InvestigationWorkflow = None
+workflow: ADKInvestigationWorkflow = None
 
 
 @asynccontextmanager
@@ -33,13 +33,14 @@ async def lifespan(app: FastAPI):
     anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
     variant = os.getenv("VARIANT", "baseline")
 
-    workflow = InvestigationWorkflow(
+    # Use ADK workflow
+    workflow = ADKInvestigationWorkflow(
         backend_url=backend_url,
         anthropic_api_key=anthropic_api_key,
         variant=variant,
     )
 
-    logger.info(f"✅ Workflow initialized (backend={backend_url}, variant={variant})")
+    logger.info(f"✅ ADK workflow initialized (backend={backend_url}, variant={variant})")
 
     yield
 

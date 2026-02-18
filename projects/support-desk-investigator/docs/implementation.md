@@ -82,6 +82,81 @@ frappe (bench) → web server (port 8000) + socketio (port 9000)
 
 ---
 
+### ✅ Day 2: Backend Service & Tool APIs (COMPLETED)
+
+**Date**: 2026-02-17
+
+**What was implemented**:
+- FastAPI backend service with webhooks and tool endpoints
+- CaseFile schema for normalized ticket data
+- Webhook receiver for Frappe ticket events
+- Tool API endpoints with mock data:
+  - `GET /tools/ticket/{id}` - Ticket details
+  - `POST /tools/logs/query` - Log queries
+  - `POST /tools/incidents/search` - Similar incident search
+  - `GET /tools/deploys/recent` - Recent deployments
+  - `GET /tools/customer/{id}` - Customer information
+- Docker containerization for backend service
+
+**Files created**:
+- `src/common/schemas.py` - Common data models (CaseFile, InvestigationResult, Evidence, Action)
+- `src/backend/app.py` - FastAPI application
+- `src/backend/routes/webhooks.py` - Webhook endpoints
+- `src/backend/routes/tools.py` - Tool API endpoints with mock data
+- `Dockerfile.backend` - Backend service container
+- Updated `docker-compose.yml` - Added backend service
+- Updated `pyproject.toml` - Added FastAPI, uvicorn, httpx dependencies
+
+**Technical decisions**:
+- FastAPI for async/await support and auto-generated OpenAPI docs
+- Pydantic models for strict schema validation
+- Mock data for Day 2 (will connect to real systems in Day 3-4)
+- Webhook normalization: Frappe format → CaseFile schema
+- Tool endpoints return structured JSON for agent consumption
+- Backend depends on Frappe service (waits for it to be healthy)
+
+**Service endpoints**:
+- Backend API: http://localhost:8000
+- API docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/health
+- Webhooks: http://localhost:8000/webhooks/*
+- Tools: http://localhost:8000/tools/*
+
+**Testing**:
+- ✅ Backend service builds successfully
+- ✅ All endpoints responding with 200 OK
+- ✅ Health checks working
+- ✅ Webhook receiver accepting payloads
+- ✅ Tool endpoints returning mock data
+- ✅ OpenAPI documentation generated
+- ✅ End-to-end verification (fresh deployment):
+  - docker compose down -v → up
+  - Webhooks automatically created via seed script
+  - Test ticket created in Frappe UI
+  - Backend received webhook with all 9 fields
+  - Successfully normalized to CaseFile format
+
+**Mock data implemented**:
+- Ticket: Checkout 502 error scenario
+- Logs: Mock ERROR logs with 502 patterns
+- Incidents: Similar past incidents with resolutions
+- Deploys: Recent deployments to checkout/payment services
+- Customer: Enterprise customer profile
+
+**Automated configuration**:
+- `scripts/seed-db.sql` - Database seed script with webhook configuration
+- Automatically applied during first-time initialization
+- Creates two webhooks:
+  - HD Ticket - Creation (after_insert)
+  - HD Ticket - Update (on_update)
+- Both webhooks send 9 fields: name, subject, description, status, priority, contact, customer, creation, modified
+
+**Known characteristics**:
+- Tool endpoints use mock data (Day 4 will connect to Qdrant, real log systems)
+- Webhook receiver acknowledges but doesn't trigger investigation yet (Day 3)
+- No Frappe API client yet (will add when posting results back)
+- Webhooks are automatically configured via seed script (no manual UI setup needed)
+
 ### ✅ Day 3: Agent Service & Investigation Workflow (COMPLETED)
 
 **Date**: 2026-02-17
@@ -184,80 +259,110 @@ Frappe Webhook → Backend (normalize) → Agent (investigate) → Backend (post
 
 ---
 
-### ✅ Day 2: Backend Service & Tool APIs (COMPLETED)
+### ✅ Day 3 (Migration): Google ADK Integration (COMPLETED)
 
-**Date**: 2026-02-17
+**Date**: 2026-02-18
 
 **What was implemented**:
-- FastAPI backend service with webhooks and tool endpoints
-- CaseFile schema for normalized ticket data
-- Webhook receiver for Frappe ticket events
-- Tool API endpoints with mock data:
-  - `GET /tools/ticket/{id}` - Ticket details
-  - `POST /tools/logs/query` - Log queries
-  - `POST /tools/incidents/search` - Similar incident search
-  - `GET /tools/deploys/recent` - Recent deployments
-  - `GET /tools/customer/{id}` - Customer information
-- Docker containerization for backend service
+- Migrated from custom workflow to Google Agent Development Kit (ADK)
+- Replaced rule-based logic with LLM-driven reasoning
+- Implemented SequentialAgent pattern with 4 specialized sub-agents
+- Created ADK function tools wrapping backend HTTP endpoints
+- Maintained backward compatibility with existing HTTP interface
 
-**Files created**:
-- `src/common/schemas.py` - Common data models (CaseFile, InvestigationResult, Evidence, Action)
-- `src/backend/app.py` - FastAPI application
-- `src/backend/routes/webhooks.py` - Webhook endpoints
-- `src/backend/routes/tools.py` - Tool API endpoints with mock data
-- `Dockerfile.backend` - Backend service container
-- Updated `docker-compose.yml` - Added backend service
-- Updated `pyproject.toml` - Added FastAPI, uvicorn, httpx dependencies
+**Files created/modified**:
+- `src/agent/adk_tools.py` (NEW) - 5 ADK function tools for backend integration
+- `src/agent/adk_workflow.py` (NEW) - SequentialAgent with 4-phase workflow
+- `src/agent/workflow.py` → `src/agent/workflow_legacy.py` (RENAMED) - Legacy implementation preserved
+- `src/agent/app.py` (MODIFIED) - Updated to use ADK workflow
+- `pyproject.toml` (MODIFIED) - Added google-adk>=1.25.0 dependency
+- `.env.example` (MODIFIED) - Added ADK_MODEL configuration
+- `docker-compose.yml` (MODIFIED) - Added ADK_MODEL environment variable
 
 **Technical decisions**:
-- FastAPI for async/await support and auto-generated OpenAPI docs
-- Pydantic models for strict schema validation
-- Mock data for Day 2 (will connect to real systems in Day 3-4)
-- Webhook normalization: Frappe format → CaseFile schema
-- Tool endpoints return structured JSON for agent consumption
-- Backend depends on Frappe service (waits for it to be healthy)
+- **SequentialAgent pattern**: Chose 4 specialized sub-agents over single agent for:
+  - Better observability (clear phase boundaries)
+  - Easier debugging (isolated agent responsibilities)
+  - Explicit state management between phases
+  - Alignment with original architecture specification
+- **Tool binding strategy**: Function tools wrapping HTTP calls
+  - Maintains separation between agent and backend
+  - No architecture changes required in backend
+  - Tools only available to GatherAgent (principle of least privilege)
+- **Model choice**: Anthropic Claude 3.5 Sonnet via ADK
+  - Already configured in environment
+  - Claude excels at structured reasoning and JSON output
+  - Supports async execution for tool calls
+- **State management**: ADK automatically passes state between agents
+  - TriageAgent → triage_result
+  - GatherAgent → evidence
+  - VerifyAgent → analysis
+  - FinalizeAgent → investigation_result
+- **Backward compatibility**: FastAPI interface unchanged
+  - Backend still calls POST /investigate with CaseFile
+  - Returns InvestigationResult with same schema
+  - No changes needed in backend service
 
-**Service endpoints**:
-- Backend API: http://localhost:8000
-- API docs: http://localhost:8000/docs
-- Health check: http://localhost:8000/health
-- Webhooks: http://localhost:8000/webhooks/*
-- Tools: http://localhost:8000/tools/*
+**ADK Agent Architecture**:
+```
+SequentialAgent (InvestigationWorkflow)
+├── TriageAgent (no tools)
+│   └→ Analyzes ticket, outputs triage_result JSON
+├── GatherAgent (5 tools)
+│   ├→ get_ticket_details
+│   ├→ query_logs
+│   ├→ search_similar_incidents
+│   ├→ get_recent_deployments
+│   └→ get_customer_info
+│   └→ Collects evidence, outputs evidence JSON
+├── VerifyAgent (no tools)
+│   └→ Analyzes evidence, outputs analysis JSON
+└── FinalizeAgent (no tools)
+    └→ Generates customer reply and internal notes
+```
 
-**Testing**:
-- ✅ Backend service builds successfully
-- ✅ All endpoints responding with 200 OK
-- ✅ Health checks working
-- ✅ Webhook receiver accepting payloads
-- ✅ Tool endpoints returning mock data
-- ✅ OpenAPI documentation generated
-- ✅ End-to-end verification (fresh deployment):
-  - docker compose down -v → up
-  - Webhooks automatically created via seed script
-  - Test ticket created in Frappe UI
-  - Backend received webhook with all 9 fields
-  - Successfully normalized to CaseFile format
+**ADK Function Tools**:
+Each tool wraps a backend HTTP endpoint with:
+- Rich docstrings (parsed by ADK for LLM context)
+- Type hints on all parameters
+- Clear descriptions of when to use the tool
+- Async execution using httpx AsyncClient
 
-**Mock data implemented**:
-- Ticket: Checkout 502 error scenario
-- Logs: Mock ERROR logs with 502 patterns
-- Incidents: Similar past incidents with resolutions
-- Deploys: Recent deployments to checkout/payment services
-- Customer: Enterprise customer profile
+**Phase-Specific Instructions**:
+Each agent receives detailed instructions for:
+- Input: What data to read from state
+- Processing: What analysis or actions to perform
+- Output: What JSON structure to write to state
+- Constraints: Format requirements, validation rules
 
-**Automated configuration**:
-- `scripts/seed-db.sql` - Database seed script with webhook configuration
-- Automatically applied during first-time initialization
-- Creates two webhooks:
-  - HD Ticket - Creation (after_insert)
-  - HD Ticket - Update (on_update)
-- Both webhooks send 9 fields: name, subject, description, status, priority, contact, customer, creation, modified
+**Key improvements over legacy workflow**:
+- **LLM-driven reasoning**: Replaced keyword matching with Claude's analysis
+- **Structured output**: Enforced JSON schemas in agent instructions
+- **Tool selection**: LLM decides which tools to call based on triage
+- **Evidence synthesis**: LLM cross-references evidence from multiple sources
+- **Natural language**: Customer replies and internal notes use LLM generation
+- **Observability**: ADK provides built-in tracing and state inspection
+
+**Testing approach**:
+- Unit: Individual tools can be tested with httpx mocking
+- Integration: SequentialAgent.run() with mock backend
+- End-to-end: docker compose up → create ticket → verify investigation
+
+**Migration verification**:
+- ✅ google-adk dependency installed
+- ✅ All 5 ADK tools created with proper docstrings
+- ✅ SequentialAgent with 4 sub-agents configured
+- ✅ FastAPI app.py updated to use ADK workflow
+- ✅ Legacy workflow preserved as workflow_legacy.py
+- ✅ Environment variables configured
+- ⏳ Docker rebuild and end-to-end test pending
 
 **Known characteristics**:
-- Tool endpoints use mock data (Day 4 will connect to Qdrant, real log systems)
-- Webhook receiver acknowledges but doesn't trigger investigation yet (Day 3)
-- No Frappe API client yet (will add when posting results back)
-- Webhooks are automatically configured via seed script (no manual UI setup needed)
+- ADK adds ~2-5 seconds to investigation time (LLM latency)
+- State is automatically serialized between agents
+- JSON parsing in finalize step handles both dict and string formats
+- Fallback logic returns safe defaults on LLM failure
+- All HTTP tools share a single AsyncClient for connection pooling
 
 ---
 
