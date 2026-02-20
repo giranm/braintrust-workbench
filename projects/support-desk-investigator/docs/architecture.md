@@ -1,6 +1,6 @@
 # Architecture - Support Desk Investigator
 
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-20
 
 This document describes the target architecture for the Support Desk Investigator demo:
 - Frappe Helpdesk for ticketing
@@ -88,11 +88,14 @@ The agent performs:
 6) **Finalize**: produce customer reply + internal notes + actions + confidence
 
 ### 4.3 Results back to Frappe
-Backend posts to ticket:
-- customer reply draft (as a comment or response suggestion)
-- internal note (evidence + hypothesis + next steps)
-- tags/status updates (optional)
-- confidence and escalation guidance (optional)
+Backend posts to ticket via Frappe API:
+- **Internal note** (Comment doctype): Evidence summary, confidence, escalation decision
+- **Customer reply draft** (Comment/Info doctype): Suggested response for agent review
+- **Customer communication** (Communication doctype): Automated response visible in portal
+  - Attributed to "Helpdesk Assistant" service account
+  - Uses communication_medium="Email" for portal visibility
+- **Tags**: auto-investigated, needs-escalation, confidence-level tags
+- **Status updates**: (optional, not currently implemented)
 
 ---
 

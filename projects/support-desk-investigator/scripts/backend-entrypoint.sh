@@ -29,6 +29,12 @@ python /app/scripts/ingest-qdrant.py || {
     echo "⚠️  Qdrant ingestion failed, but continuing startup (will use mock data fallback)"
 }
 
+# Run Frappe user initialization (idempotent - will skip existing users)
+echo "👤 Running Frappe user initialization (idempotent)..."
+python /app/scripts/init_frappe_users.py || {
+    echo "⚠️  Frappe user initialization failed, but continuing startup"
+}
+
 echo "✅ Initialization complete!"
 echo "🚀 Starting backend service..."
 

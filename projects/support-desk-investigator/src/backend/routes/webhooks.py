@@ -8,12 +8,16 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 
 from ...common.schemas import CaseFile, TicketPriority, TicketStatus
+from ..frappe_client import FrappeClient
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Agent service URL
 AGENT_URL = os.getenv("AGENT_URL", "http://agent:8001")
+
+# Frappe client (initialized once)
+frappe_client: FrappeClient = None
 
 
 @router.post("/frappe")
@@ -54,10 +58,9 @@ async def receive_frappe_webhook(request: Request):
                 f"(confidence={investigation_result.confidence:.0%}, "
                 f"escalate={investigation_result.should_escalate})"
             )
-            # TODO Day 4: Post results back to Frappe
-            # For now, just log the results
-            logger.info(f"📝 Customer reply: {investigation_result.customer_reply[:100]}...")
-            logger.info(f"📝 Internal notes: {investigation_result.internal_notes[:100]}...")
+
+            # Post results back to Frappe
+            await _post_results_to_frappe(case_file.ticket_id, investigation_result)
 
             return {
                 "status": "investigated",
@@ -189,6 +192,87 @@ async def _trigger_investigation(case_file: CaseFile):
     except Exception as e:
         logger.error(f"❌ Unexpected error during investigation: {e}", exc_info=True)
         return None
+
+
+async def _post_results_to_frappe(ticket_id: str, investigation_result):
+    """Post investigation results back to Frappe ticket.
+
+    Args:
+        ticket_id: Ticket ID
+        investigation_result: InvestigationResult from agent
+    """
+    global frappe_client
+
+    # Initialize Frappe client if not already done
+    if frappe_client is None:
+        frappe_url = os.getenv("FRAPPE_URL", "http://frappe:8000")
+        frappe_client = FrappeClient(base_url=frappe_url)
+
+    try:
+        # Format internal notes with investigation details
+        internal_notes = f"""**Automated Investigation Results**
+
+**Confidence**: {investigation_result.confidence:.0%}
+**Escalate**: {"Yes" if investigation_result.should_escalate else "No"}
+**Investigation Time**: {investigation_result.investigation_time_ms}ms
+
+**Internal Notes**:
+{investigation_result.internal_notes}
+
+**Evidence Collected**: {len(investigation_result.evidence)} sources
+"""
+
+        # Add evidence summary if available
+        if investigation_result.evidence:
+            internal_notes += "\n\n**Evidence Summary**:\n"
+            for i, evidence in enumerate(investigation_result.evidence, 1):
+                internal_notes += f"{i}. **{evidence.source}** (confidence: {evidence.confidence:.0%}): {evidence.content}\n"
+
+        # Add recommended actions if any
+        if investigation_result.actions:
+            internal_notes += "\n\n**Recommended Actions**:\n"
+            for i, action in enumerate(investigation_result.actions, 1):
+                internal_notes += f"{i}. **{action.type.value}**: {action.reason}\n"
+
+        # Post internal notes
+        logger.info(f"📝 Posting internal notes to Frappe ticket {ticket_id}")
+        await frappe_client.post_internal_note(
+            ticket_id=ticket_id,
+            notes=internal_notes,
+        )
+
+        # Post customer reply as draft/suggestion (internal view)
+        logger.info(f"💬 Posting customer reply draft to Frappe ticket {ticket_id}")
+        await frappe_client.add_comment_draft(
+            ticket_id=ticket_id,
+            reply_text=investigation_result.customer_reply,
+        )
+
+        # Post customer-facing communication (portal view)
+        logger.info(f"📧 Posting customer communication to portal for ticket {ticket_id}")
+        await frappe_client.post_customer_communication(
+            ticket_id=ticket_id,
+            message=investigation_result.customer_reply,
+            subject="Update on your support ticket",
+        )
+
+        # Add investigation tags
+        tags = ["auto-investigated"]
+        if investigation_result.should_escalate:
+            tags.append("needs-escalation")
+        if investigation_result.confidence >= 0.8:
+            tags.append("high-confidence")
+        elif investigation_result.confidence < 0.5:
+            tags.append("low-confidence")
+
+        logger.info(f"🏷️  Adding tags to Frappe ticket {ticket_id}")
+        await frappe_client.add_tags(ticket_id=ticket_id, tags=tags)
+
+        logger.info(f"✅ Successfully posted investigation results to Frappe ticket {ticket_id}")
+
+    except Exception as e:
+        # Log error but don't fail the webhook
+        logger.error(f"❌ Failed to post results to Frappe: {e}", exc_info=True)
 
 
 @router.get("/health")

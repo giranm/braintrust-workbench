@@ -8,12 +8,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- OpenTelemetry instrumentation and Braintrust integration (Day 5)
-- Custom evaluation scorers and experiments (Day 6)
+- OpenTelemetry instrumentation and Braintrust integration (Day 6)
+- Custom evaluation scorers and experiments (Day 7)
 - Test dataset creation with record/replay fixtures
 - Experiment tracking framework
-- Connect to real Frappe API for ticket data
 - Integrate real log aggregation system
+
+---
+
+## [0.3.0] - 2026-02-20
+
+### Added - Frappe API Integration
+- **Service Account**: "Helpdesk Assistant" (helpdesk-assistant@example.com) for automated responses
+- **Demo Customer**: "John Doe" (john.doe@acmecorp.com) from "Acme Corporation"
+- **Idempotent User Initialization**: `scripts/init_frappe_users.py` for automatic setup
+- Customer-facing communications now appear in Frappe customer portal
+- Proper message attribution (sender/sender_full_name fields)
+- Complete integration loop: Ticket → Investigation → Results posted to Frappe
+
+### Changed
+- Updated `scripts/backend-entrypoint.sh` to include Frappe user initialization
+- Enhanced `src/backend/frappe_client.py` with sender attribution for Communications
+- Communications now use `communication_medium: "Email"` (required by Frappe validation)
+
+### Fixed
+- Communications no longer show "No name found" - proper attribution to "Helpdesk Assistant"
+- Customer communications now visible in portal view (not just internal desk view)
+
+### Technical Details
+- Initialization pattern: Similar to Qdrant ingestion (idempotent, automatic)
+- Frappe doctypes: Comment (internal), Communication (customer-facing)
+- Authentication: Basic auth with API key:secret (base64)
+- Portal visibility: Communications with communication_medium="Email" appear in both desk and portal views
+
+### Benefits
+- Complete end-to-end workflow with Frappe Helpdesk
+- Professional customer experience with branded responses
+- Idempotent environment setup for demos and development
+- Ready-to-use service and customer accounts
 
 ---
 

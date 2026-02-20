@@ -460,12 +460,115 @@ Current:  Local model → embeddings → Qdrant
 
 ---
 
+### ✅ Day 5: Frappe API Integration (COMPLETED)
+
+**Date**: 2026-02-20
+
+**What was implemented**:
+- Created service account "Helpdesk Assistant" for automated responses
+- Created demo customer user "John Doe" and organization "Acme Corporation"
+- Implemented idempotent Frappe user initialization
+- Fixed Communication doctype to properly attribute messages
+- Integrated customer-facing communications into portal view
+
+**Files created/modified**:
+- `scripts/init_frappe_users.py` (NEW) - Idempotent Frappe user/org initialization
+- `scripts/backend-entrypoint.sh` (MODIFIED) - Added Frappe user init step
+- `src/backend/frappe_client.py` (MODIFIED) - Added sender/sender_full_name to Communications
+- `src/backend/routes/webhooks.py` (ALREADY EXISTS) - Posts internal notes, drafts, and customer communications
+
+**Technical decisions**:
+- **Service account pattern**: Created "Helpdesk Assistant" user for message attribution
+  - Email: helpdesk-assistant@example.com
+  - Communications now show proper sender instead of "No name found"
+  - Improves customer experience and brand consistency
+- **Communication vs Comment doctypes**:
+  - Comment doctype: Internal only (desk view)
+  - Communication doctype: Customer-facing (portal view)
+  - communication_medium must be "Email" (not "Portal") per Frappe validation
+- **Idempotent initialization**: Similar pattern to Qdrant ingestion
+  - Checks if users/orgs exist before creating
+  - Runs automatically on backend startup
+  - Gracefully handles failures (warns but continues)
+- **Demo customer setup**: Pre-configured John Doe from Acme Corporation
+  - Enables realistic demo scenarios
+  - Ticket attribution to customer account
+  - Professional demo presentation
+
+**Architecture**:
+```
+Ticket Created (Frappe)
+    ↓ Webhook
+Backend receives ticket
+    ↓ Triggers investigation
+Agent investigates (4 phases)
+    ↓ Returns results
+Backend posts to Frappe:
+    1. Internal notes (Comment doctype)
+    2. Customer reply draft (Comment/Info doctype)
+    3. Customer communication (Communication doctype) ✅ NEW
+    4. Tags (auto-investigated, needs-escalation)
+    ↓
+Customer sees response in portal ✅
+Agent sees all details in desk view ✅
+```
+
+**Initialization flow**:
+1. Backend starts → waits for Qdrant
+2. Runs Qdrant ingestion (idempotent)
+3. **Runs Frappe user initialization (idempotent)** ✅ NEW
+   - Creates Helpdesk Assistant service account
+   - Creates John Doe customer user
+   - Creates Acme Corporation customer org
+4. Starts FastAPI service
+
+**Frappe API integration details**:
+- Authentication: Basic auth with API key:secret (base64)
+- Internal notes: POST /api/resource/Comment (comment_type: "Comment")
+- Reply drafts: POST /api/resource/Comment (comment_type: "Info")
+- Customer comms: POST /api/resource/Communication (communication_medium: "Email")
+- Tags: POST /api/resource/Tag Link
+- Ticket creation: POST /api/resource/HD Ticket
+
+**Testing**:
+- ✅ Service account created successfully
+- ✅ Demo customer user and org created successfully
+- ✅ Idempotent initialization verified (skips existing entities)
+- ✅ Customer communications appear in portal view
+- ✅ Communications properly attributed to "Helpdesk Assistant"
+- ✅ Internal notes and drafts visible in desk view
+- ✅ Tags applied to tickets (with fallback on errors)
+- ✅ End-to-end: Ticket creation → Investigation → Results in Frappe
+
+**Portal visibility**:
+- Customer portal: http://localhost:8080/helpdesk/tickets/{id}
+  - Shows ticket description
+  - Shows automated response from "Helpdesk Assistant"
+- Internal desk: http://localhost:8080/desk/hd-ticket/{id}
+  - Shows all Comments (internal notes, drafts)
+  - Shows Communications (customer-facing)
+  - Shows evidence and investigation details
+
+**Known characteristics**:
+- Tags require Tag doctype to exist (may fail on fresh Frappe)
+- Ticket creation via API always sets raised_by to authenticated user
+- For realistic demos, create tickets via Frappe UI as customer user
+- Communications with communication_medium="Email" appear in both views
+- Service accounts need no roles/permissions for message sending
+
+**Next steps**:
+- Add OpenTelemetry instrumentation (Day 6)
+- Implement Braintrust observability integration (Day 6)
+- Create evaluation framework with variants (Day 7)
+
+---
+
 ## Current State
 The repo currently contains:
 - ✅ **Docker Compose stack** with Frappe Helpdesk, Backend, Agent running
 - ✅ **Persistent storage** for Frappe data
 - ✅ **Helper scripts** for local development
-- ✅ **End-to-end pipeline**: Webhook → Backend → Agent → Investigation
+- ✅ **End-to-end pipeline**: Webhook → Backend → Agent → Investigation → Results posted to Frappe ✅ **Idempotent initialization** for Qdrant and Frappe users
 - `src/main.py` — simple single-process demo runner (to be replaced)
 - `src/eval.py` — simple evaluation example (to be evolved)
 
