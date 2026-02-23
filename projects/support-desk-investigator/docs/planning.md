@@ -58,23 +58,26 @@ As a developer, I want to:
 
 ## Milestones
 
-### Phase 1 — End-to-end demo loop (MVP)
-- Frappe Helpdesk running in Compose
-- Backend receives webhook events
-- ADK agent invoked and produces a response
-- Response posted back into ticket
-- OpenTelemetry spans visible in Braintrust
+### Phase 1 — End-to-end demo loop (MVP) ✅ COMPLETE (v0.3.0)
+- ✅ Frappe Helpdesk running in Compose
+- ✅ Backend receives webhook events
+- ✅ ADK agent invoked and produces a response
+- ✅ Response posted back into ticket (internal notes + customer communication)
+- ✅ Service accounts and demo customer configured
+- ⏳ OpenTelemetry spans visible in Braintrust (Day 6 - next)
 
-### Phase 2 — Add tools + retrieval
-- Qdrant populated with sample incidents/runbooks/tickets
-- Agent uses incident retrieval tool
-- Add log querying tool (real or demo)
-- Add evidence bundle to outputs
+### Phase 2 — Add tools + retrieval ✅ COMPLETE (v0.3.0)
+- ✅ Qdrant populated with sample incidents (20 samples)
+- ✅ Agent uses incident retrieval tool via ADK
+- ✅ Log querying tool (demo mode with mock data)
+- ✅ Deploy history tool
+- ✅ Customer context tool
+- ✅ Evidence bundle included in outputs
 
-### Phase 3 — Evals + variants
-- Introduce `VARIANT=baseline` and `VARIANT=improved`
-- Record/replay tool outputs for deterministic runs
-- Add scorers:
+### Phase 3 — Evals + variants 🚧 IN PROGRESS
+- ⏳ Introduce `VARIANT=baseline` and `VARIANT=improved` (Day 7 - planned)
+- ⏳ Record/replay tool outputs for deterministic runs (planned)
+- ⏳ Add scorers (planned):
   - schema + evidence grounding
   - tool-call requirements
   - helpfulness/tone

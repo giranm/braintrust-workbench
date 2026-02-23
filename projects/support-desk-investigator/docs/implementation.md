@@ -1,8 +1,8 @@
 # Implementation Notes - Support Desk Investigator
 
-**Last Updated**: 2026-02-17
+**Last Updated**: 2026-02-23
 
-This doc captures technical decisions and a checklist for implementation.
+This doc captures technical decisions, progress tracking, and implementation history.
 
 ---
 
@@ -563,22 +563,118 @@ Agent sees all details in desk view ✅
 
 ---
 
-## Current State
-The repo currently contains:
-- ✅ **Docker Compose stack** with Frappe Helpdesk, Backend, Agent running
-- ✅ **Persistent storage** for Frappe data
-- ✅ **Helper scripts** for local development
-- ✅ **End-to-end pipeline**: Webhook → Backend → Agent → Investigation → Results posted to Frappe ✅ **Idempotent initialization** for Qdrant and Frappe users
-- `src/main.py` — simple single-process demo runner (to be replaced)
-- `src/eval.py` — simple evaluation example (to be evolved)
+### Customer-App Frontend (ADDED)
 
-Target state is a multi-service Docker Compose deployment with:
-- ✅ Frappe Helpdesk (DONE)
-- ✅ Qdrant (READY, not yet used)
-- ✅ Backend service (DONE)
-- ✅ Agent service (DONE)
-- ⏳ Results posted back to Frappe (Day 4)
-- ⏳ OpenTelemetry tracing exported to Braintrust (Day 5)
+**Date**: 2026-02-23
+
+**What was added**:
+- React + TypeScript frontend for simulating customer error scenarios
+- Multiple portal simulations: Shop, Analytics, Pay, Travel
+- 8 realistic error scenario pages:
+  - Checkout Timeout
+  - Payment Order Split
+  - Dashboard Timeout
+  - Export Failed
+  - Transfer Pending
+  - Duplicate Charge
+  - Ticketing Failed
+  - Price Changed
+- Ticket generation UI with Frappe integration (planned)
+- Settings page for configuration
+
+**Location**: `src/customer-app/`
+
+**Technology Stack**:
+- Vite for build tooling
+- React + TypeScript for UI
+- shadcn-ui + Tailwind CSS for components and styling
+- React Router for navigation
+- TanStack Query for data fetching
+
+**Files structure**:
+```
+src/customer-app/
+├── src/
+│   ├── App.tsx              # Main app with routing
+│   ├── components/          # UI components (shadcn-ui)
+│   ├── pages/               # Scenario pages
+│   │   ├── Home.tsx         # Landing page
+│   │   ├── Settings.tsx     # Configuration
+│   │   └── portal/          # Error scenarios by product
+│   │       ├── shop/        # Checkout Timeout, Payment Order Split
+│   │       ├── analytics/   # Dashboard Timeout, Export Failed
+│   │       ├── pay/         # Transfer Pending, Duplicate Charge
+│   │       └── travel/      # Ticketing Failed, Price Changed
+│   ├── layouts/             # Portal and simulator shells
+│   └── data/scenarios.ts    # Scenario definitions
+├── public/                  # Static assets
+├── package.json             # npm dependencies
+└── vite.config.ts           # Vite configuration
+```
+
+**Purpose**:
+- Provides realistic customer scenarios for demo
+- Generates varied support tickets automatically
+- Simulates customer experience before ticket creation
+- Completes the end-to-end flow: Customer Issue → Ticket → Investigation → Resolution
+
+**Status**:
+- ✅ Code integrated into repository
+- ✅ Ready to run locally (`npm install && npm run dev`)
+- ⏳ Not yet integrated with Docker Compose
+- ⏳ Ticket generation to Frappe API not yet implemented
+
+**Running locally**:
+```bash
+cd src/customer-app
+npm install
+npm run dev
+# Open http://localhost:5173
+```
+
+**Future integration**:
+- Add to docker-compose.yml as a service
+- Implement Frappe API ticket creation
+- Connect scenario metadata to investigation context
+- Use for automated test data generation
+
+---
+
+## Current State (v0.3.0 - 2026-02-23)
+
+### ✅ Fully Operational
+- **Docker Compose stack**: Frappe Helpdesk, MariaDB, Redis, Qdrant, Backend, Agent
+- **Persistent storage**: All data (Frappe DB, Qdrant vectors) persists across restarts
+- **Helper scripts**: start.sh, stop.sh, logs.sh for local development
+- **End-to-end pipeline**: Complete integration from webhook to investigation to results
+  ```
+  Frappe Ticket Created
+    → Webhook Event (backend)
+    → Case File Normalization (backend)
+    → Investigation (agent with ADK)
+    → Results Posted (backend → Frappe)
+      ├─ Internal Notes (Comment)
+      ├─ Customer Communication (Communication, portal-visible)
+      └─ Tags & Metadata
+  ```
+- **Idempotent initialization**:
+  - Qdrant ingestion (20 sample incidents with local embeddings)
+  - Frappe user provisioning (service account + demo customer)
+  - Automatic on backend startup
+- **Complete Frappe integration**:
+  - Service account: Helpdesk Assistant (helpdesk-assistant@example.com)
+  - Demo customer: John Doe (john.doe@acmecorp.com) from Acme Corporation
+  - Customer communications visible in portal view
+  - Internal notes for support team
+- **Customer-app frontend**: React + TypeScript UI with 8 error scenarios (ready, not in compose)
+- **ADK-based agent**: 4-phase investigation workflow (Triage → Gather → Verify → Finalize)
+- **Tool system**: 5 tools (ticket, logs, incidents, deploys, customer) with mock/Qdrant data
+- **Local embeddings**: sentence-transformers/all-MiniLM-L6-v2 (no API calls)
+
+### ⏳ Planned (Next Steps)
+- **Day 6**: OpenTelemetry instrumentation + Braintrust export
+- **Day 7**: Evaluation framework with baseline vs improved variants
+- **Future**: Record/replay mode for deterministic demos, customer-app Docker integration
 
 ---
 
@@ -671,48 +767,67 @@ Optional:
 
 ## Implementation Checklist
 
-### Infrastructure (Day 1)
+### Infrastructure (Day 1) ✅ COMPLETE
 - [x] Add docker-compose.yml
 - [x] Frappe Helpdesk service with auto-init
 - [x] MariaDB + Redis dependencies
-- [x] Qdrant service (profile: tools)
+- [x] Qdrant service (upgraded to v1.16.3, always running)
 - [x] Persistent volumes for all data
 - [x] Helper scripts (start/stop/logs)
 - [x] Quick start documentation
 
-### Backend Service (Day 2)
+### Backend Service (Day 2) ✅ COMPLETE
 - [x] Backend skeleton (FastAPI)
 - [x] Webhook endpoint: `POST /webhooks/frappe`
-- [x] CaseFile schema and storage
-- [ ] Frappe API client helper (deferred to Day 3 - when posting results back)
+- [x] CaseFile schema and normalization
+- [x] Frappe API client helper (Day 5)
 - [x] Add backend to docker-compose
 - [x] Configure Frappe webhook (automated via seed-db.sql)
+- [x] Backend entrypoint script with initialization flow
 
-### Tool System (Day 2-4)
-- [x] Tool API routes (ticket/logs/incidents/deploys/customer) - with mock data
-- [ ] Qdrant collection + ingestion script (Day 4)
+### Tool System (Day 2-4) ✅ COMPLETE
+- [x] Tool API routes (ticket/logs/incidents/deploys/customer)
+- [x] Qdrant collection + ingestion script (Day 4)
+- [x] Local embeddings integration (sentence-transformers)
 - [x] Mock logs/deploys/customer data
 - [x] Tool endpoint testing
+- [x] Idempotent Qdrant initialization
 
-### Agent Service (Day 3)
+### Agent Service (Day 3) ✅ COMPLETE
 - [x] Agent service skeleton (FastAPI)
-- [x] Investigation workflow (triage/gather/verify/finalize)
-- [x] Tool bindings (HTTP clients via httpx)
-- [x] LLM provider integration (Anthropic SDK integrated, baseline variant uses rules)
+- [x] ADK workflow implementation (SequentialAgent with 4 phases)
+- [x] Tool bindings (ADK function tools wrapping HTTP)
+- [x] LLM provider integration (Claude 3.5 Sonnet via ADK)
 - [x] Add agent to docker-compose
 - [x] Backend → Agent invocation (webhook triggers investigation)
 
-### Observability (Day 5)
+### Frappe Integration (Day 5) ✅ COMPLETE
+- [x] Service account provisioning (Helpdesk Assistant)
+- [x] Demo customer provisioning (John Doe from Acme Corp)
+- [x] Idempotent user initialization
+- [x] Internal notes posting (Comment doctype)
+- [x] Customer communication posting (Communication doctype)
+- [x] Portal visibility for customer communications
+- [x] Message attribution (sender/sender_full_name)
+
+### Customer Portal (Added 2026-02-23) ✅ READY
+- [x] React + TypeScript frontend cloned
+- [x] 8 error scenario pages implemented
+- [x] shadcn-ui components integrated
+- [ ] Frappe API ticket creation (planned)
+- [ ] Docker Compose integration (planned)
+
+### Observability (Day 6) ⏳ PLANNED
 - [ ] OTel instrumentation (backend)
 - [ ] OTel instrumentation (agent)
 - [ ] Braintrust exporter configuration
 - [ ] Trace context propagation
 - [ ] Span attributes for debugging
 
-### Evaluation (Day 6)
-- [ ] Variants (baseline vs improved)
+### Evaluation (Day 7) ⏳ PLANNED
+- [ ] Variants (baseline vs improved differentiation)
 - [ ] Test dataset creation
 - [ ] Deterministic scorers (schema/evidence/tools)
 - [ ] LLM-as-judge scorers (tone/helpfulness)
 - [ ] Offline regression runner
-- [ ] Demo tickets + record/replay fixtures
+- [ ] Record/replay mode for fixtures

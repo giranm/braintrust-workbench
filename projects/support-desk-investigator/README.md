@@ -56,19 +56,42 @@ Then compare the results.
 
 ## Services (Docker Compose)
 
-| Service | Purpose |
-|----------|----------|
-| frappe-helpdesk | Ticket UI + ticket storage |
-| backend | Webhook receiver + tool API + orchestration |
-| agent | Google ADK workflow + LLM calls |
-| qdrant | Vector DB for similar incidents |
-| redis *(optional)* | Async job queue |
-| demo-logs *(optional)* | Deterministic log backend for demos |
+| Service | Purpose | Status |
+|----------|----------|--------|
+| frappe-helpdesk | Ticket UI + ticket storage + webhooks | ✅ Running |
+| backend | Webhook receiver + tool API + Frappe integration | ✅ Running |
+| agent | Google ADK workflow + LLM calls (Claude 3.5 Sonnet) | ✅ Running |
+| qdrant | Vector DB for similar incidents (local embeddings) | ✅ Running |
+| mariadb | Database for Frappe | ✅ Running |
+| redis | Cache and queue backend | ✅ Running |
+| customer-app | React frontend for ticket generation | ⏳ Ready (not in compose yet) |
+| demo-logs | Deterministic log backend for demos | 🔜 Planned |
 
 ## High-Level Flow
 
-Ticket → Webhook → Backend → Agent → Tools → Result → Ticket update  
-Tracing spans emitted throughout → Braintrust
+**Current Implementation (v0.3.0):**
+
+```
+Customer Portal (customer-app)
+  → Ticket Created (Frappe)
+  → Webhook Event (Frappe → Backend)
+  → Case File Normalization (Backend)
+  → Investigation Request (Backend → Agent)
+  → ADK Workflow (4 phases)
+    ├─ Triage: Category, severity, required tools
+    ├─ Gather: Evidence from tools (logs, incidents, deploys, customer)
+    ├─ Verify: Analyze evidence, calculate confidence
+    └─ Finalize: Generate customer reply + internal notes
+  → Results Posted (Backend → Frappe)
+    ├─ Internal Notes (Comment doctype)
+    ├─ Customer Communication (Communication doctype, visible in portal)
+    └─ Tags & Metadata
+```
+
+**Planned (Day 6+):**
+```
+Tracing spans emitted throughout → Braintrust (OpenTelemetry)
+```
 
 ## System diagram
 
@@ -106,55 +129,83 @@ flowchart TB
 
 # 3. Technology Stack
 
-### Ticketing
-- Frappe Helpdesk (open source)
+### Ticketing & Communication
+- **Frappe Helpdesk** (v16) - Open source ticket management
+- **Frappe API** - Full integration for webhooks, comments, and customer communications
+
+### Customer Portal
+- **React + TypeScript** - Frontend for ticket simulation
+- **Vite** - Build tooling
+- **shadcn-ui + Tailwind CSS** - UI components and styling
 
 ### Agent Orchestration
-- Google Agent SDK (ADK)
+- **Google Agent SDK (ADK)** - Multi-agent workflow framework
+- **SequentialAgent Pattern** - 4-phase investigation (Triage → Gather → Verify → Finalize)
 
-### LLM Providers
-- OpenAI
-- Anthropic
-(abstracted via provider layer)
+### LLM Provider
+- **Anthropic Claude 3.5 Sonnet** - Agent reasoning and generation
+- LiteLLM provider abstraction (via ADK)
 
-### Retrieval
-- Qdrant (vector DB)
+### Embeddings & Retrieval
+- **Qdrant v1.16.3** - Vector database
+- **sentence-transformers/all-MiniLM-L6-v2** - Local embeddings (no API calls)
+- 20 sample incidents pre-ingested
 
-### Observability
-- OpenTelemetry
-- Braintrust OTel SDK integration
+### Backend Services
+- **FastAPI** - Backend and agent HTTP services
+- **Python 3.12** - Runtime
+- **UV** - Package management
 
-### Runtime
-- Docker + Docker Compose
+### Observability (Planned - Day 6)
+- **OpenTelemetry** - Distributed tracing
+- **Braintrust** - Trace inspection and evaluation
+
+### Infrastructure
+- **Docker + Docker Compose** - Service orchestration
+- **MariaDB 11.8** - Persistent storage
+- **Redis 6.2** - Cache and queue backend
 
 # 4. Repository Structure
 
-Planned structure:
-
 ```
-src/
-  backend/
-    api.py
-    tools_api.py
-    frappe_client.py
-  agent/
-    workflow.py
-    tools.py
-    providers.py
-  evals/
-    scorers.py
-    datasets/
-  common/
-    schemas.py
-    tracing.py
-docs/
-  planning.md
-  implementation.md
-  architecture.md
-  issues.md
+projects/support-desk-investigator/
+├── docker-compose.yml           # All services orchestration
+├── src/
+│   ├── backend/                 # Backend API service
+│   │   ├── app.py              # FastAPI application
+│   │   ├── frappe_client.py    # Frappe API integration
+│   │   └── routes/
+│   │       ├── webhooks.py     # Webhook receiver
+│   │       └── tools.py        # Tool endpoints
+│   ├── agent/                   # Agent service
+│   │   ├── app.py              # FastAPI wrapper
+│   │   ├── adk_workflow.py     # Google ADK workflow
+│   │   └── adk_tools.py        # ADK function tools
+│   ├── customer-app/            # React frontend (ticket simulator)
+│   │   ├── src/                # React components
+│   │   └── public/             # Static assets
+│   ├── common/                  # Shared schemas
+│   │   └── schemas.py          # CaseFile, InvestigationResult
+│   ├── evals/                   # Evaluation framework (planned)
+│   │   ├── scorers.py
+│   │   └── datasets/
+│   ├── main.py                  # Main entry point (placeholder)
+│   └── eval.py                  # Evaluation runner (placeholder)
+├── scripts/
+│   ├── init_frappe.sh          # Frappe initialization
+│   ├── init_frappe_users.py    # User/customer setup
+│   ├── ingest-qdrant.py        # Vector DB ingestion
+│   └── backend-entrypoint.sh   # Backend startup script
+├── data/
+│   └── sample_incidents.json   # Incident dataset (20 samples)
+└── docs/
+    ├── quickstart.md           # Getting started guide
+    ├── planning.md             # Project goals
+    ├── implementation.md       # Technical decisions
+    ├── architecture.md         # System design
+    ├── changelog.md            # Version history
+    └── issues.md               # Known issues
 ```
-
-Current repo contains bootstrap files that will evolve into this structure.
 
 # 5. Running Locally
 
@@ -168,183 +219,333 @@ Current repo contains bootstrap files that will evolve into this structure.
 
 ## 5.2 Environment Setup
 
-Create `.env`:
+Create `.env` from the template:
 
+```bash
+cp .env.example .env
 ```
-BRAINTRUST_API_KEY=...
-BRAINTRUST_PROJECT=Support Desk Investigator
-OPENAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-VARIANT=baseline
+
+Required configuration:
+
+```bash
+# LLM Provider (required for agent reasoning)
+ANTHROPIC_API_KEY=your-anthropic-key-here
+
+# Braintrust (optional - for observability, Day 6+)
+BRAINTRUST_API_KEY=your-braintrust-key-here
+BRAINTRUST_PROJECT=support-desk-investigator
+
+# Variant toggle
+VARIANT=baseline  # or "improved"
+
+# Service URLs (defaults work for Docker Compose)
+BACKEND_URL=http://backend:8000
+AGENT_URL=http://agent:8001
+FRAPPE_URL=http://frappe:8080
+QDRANT_URL=http://qdrant:6333
 ```
+
+**Note:** OpenAI API key is not required - the system uses local sentence-transformers for embeddings and Anthropic Claude for agent reasoning.
 
 ## 5.3 Start All Services
 
-```
+```bash
 docker compose up --build
 ```
 
-Expected local endpoints (example):
+**First run takes 5-10 minutes** as Frappe initializes and backend seeds data. Monitor progress:
 
-- Frappe Helpdesk: http://localhost:8080
-- Backend API: http://localhost:8000
-- Agent Service: http://localhost:8001
-- Qdrant: http://localhost:6333
-
-# 6. Demo: Bad → Good
-
-## Step 1: Baseline
-
-Run:
-
+```bash
+# Watch initialization
+docker compose logs -f frappe backend
 ```
+
+Look for:
+- Frappe: `✅ Initialization complete!`
+- Backend: `✅ Qdrant ingestion complete!` + `✅ Frappe users initialized!`
+
+**Subsequent runs are much faster (~30 seconds)** as initialization is idempotent.
+
+### Service Endpoints
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Frappe Helpdesk** | http://localhost:8080 | Administrator / admin123 |
+| **Backend API** | http://localhost:8000/docs | - |
+| **Agent Service** | http://localhost:8001/docs | - |
+| **Qdrant Dashboard** | http://localhost:6333/dashboard | - |
+
+### Pre-Configured Accounts
+
+The system automatically creates:
+- **Service Account**: Helpdesk Assistant (helpdesk-assistant@example.com) - for automated responses
+- **Demo Customer**: John Doe (john.doe@acmecorp.com) from Acme Corporation - for ticket creation
+- **Admin**: Administrator (admin@example.com) - for Frappe management
+
+# 6. Creating Test Tickets
+
+## Option 1: Frappe UI (Current)
+
+1. Open http://localhost:8080
+2. Login as **Administrator** / **admin123**
+3. Navigate to **Helpdesk** → **New Ticket**
+4. Fill in:
+   - **Contact**: john.doe@acmecorp.com (demo customer)
+   - **Subject**: "Checkout returning 502 errors"
+   - **Description**: "Customers reporting intermittent 502 on checkout since 9:30 AM"
+   - **Priority**: High
+5. Save
+
+The webhook will trigger automatically and you'll see:
+- Investigation progress in backend/agent logs
+- Internal notes added to the ticket (Comment doctype)
+- Customer communication visible at http://localhost:8080/helpdesk/tickets/{ticket-id}
+
+## Option 2: Customer Portal App (Available)
+
+The `src/customer-app/` contains a React frontend that simulates realistic customer error scenarios:
+
+**Scenarios included:**
+- **Shop**: Checkout Timeout, Payment Order Split
+- **Analytics**: Dashboard Timeout, Export Failed
+- **Pay**: Transfer Pending, Duplicate Charge
+- **Travel**: Ticketing Failed, Price Changed
+
+**To use:**
+```bash
+cd src/customer-app
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 and click through error scenarios to generate realistic tickets.
+
+**Status:** Ready but not yet integrated with Docker Compose. Tickets must be manually created in Frappe UI for now.
+
+---
+
+# 7. Demo: Bad → Good (Planned)
+
+> **Note:** Variant comparison is planned for Day 7. The infrastructure is in place (VARIANT environment variable) but differentiated behaviors are not yet implemented.
+
+## Current Demo (v0.3.0)
+
+**What works now:**
+1. Create ticket in Frappe UI
+2. Webhook triggers backend → agent investigation
+3. ADK workflow runs 4 phases (Triage → Gather → Verify → Finalize)
+4. Tools are called: incident search, logs, deploys, customer context
+5. Results posted back to Frappe:
+   - Internal notes with evidence summary
+   - Customer communication (visible in portal)
+   - Confidence score and escalation decision
+
+**To observe:**
+```bash
+# Watch the investigation in real-time
+docker compose logs -f backend agent
+
+# Check Frappe ticket for results
+# Internal view: http://localhost:8080/desk/hd-ticket/{id}
+# Customer view: http://localhost:8080/helpdesk/tickets/{id}
+```
+
+## Future: Baseline vs Improved (Day 7)
+
+Once implemented, you'll be able to run:
+
+```bash
+# Baseline: Minimal guardrails, shallow retrieval
 VARIANT=baseline docker compose up --build
-```
 
-Create a ticket like:
-
-“Customer reports intermittent 502 on checkout.”
-
-Expected behavior:
-- Weak investigation
-- Possibly no evidence bundle
-- May hallucinate root cause
-- Overconfident output
-
-Open Braintrust:
-- Inspect trace
-- Observe tool usage (or lack thereof)
-
-## Step 2: Improved
-
-Stop and restart with:
-
-```
+# Improved: Strict schema, required tools, confidence gating
 VARIANT=improved docker compose up --build
 ```
 
-Recreate or replay the same ticket.
+And compare results in Braintrust traces and eval scores.
 
-Expected improvements:
-- Evidence references included
-- Required tools invoked
-- Structured JSON output
-- Confidence gating
-- Cleaner internal notes
+# 8. Evaluation Strategy (Planned - Day 7)
 
-Compare trace spans + eval scores.
+Two evaluation modes are planned:
 
-# 7. Evaluation Strategy
-
-Two evaluation modes:
-
-## 7.1 Offline Regression Eval
+## 8.1 Offline Regression Eval
 
 - Uses fixed dataset of tickets
 - Deterministic tool outputs (record/replay mode)
 - Compares baseline vs improved variants
 
-Scorers include:
+**Planned scorers:**
 - Schema validity
 - Evidence grounding
 - Required tool usage
 - Helpfulness / tone (LLM-as-judge)
+- Confidence calibration
 
-## 7.2 Online Sampling Eval
+## 8.2 Online Sampling Eval
 
 - Scores a subset of real ticket investigations
 - Monitors drift and regressions
 
-# 8. Variant Design
+**Status:** Infrastructure ready, scorers not yet implemented.
 
-The variant toggle is configuration-based (not branch-based).
+# 9. Variant Design (Planned - Day 7)
 
-### Baseline
-- Minimal schema
+The variant toggle is configuration-based (VARIANT environment variable).
+
+### Baseline (Planned)
+- Minimal schema enforcement
 - Shallow retrieval (low top-k)
-- No tool requirements
+- No required tool calls
 - No escalation logic
+- May hallucinate or be overconfident
 
-### Improved
-- Strict output schema
+### Improved (Planned)
+- Strict output schema validation
 - Required evidence bundle
-- Required tool invocation rules
-- Higher retrieval depth
-- Confidence + escalation policy
+- Enforced tool invocation rules (e.g., error → must query logs)
+- Higher retrieval depth + query rewriting
+- Confidence gating (low confidence → request more info / escalate)
 
-# 9. Deterministic Demo Mode
+**Current:** Both variants use the same ADK workflow. Differentiation will be added in Day 7.
 
-For stable demos:
+# 10. Deterministic Demo Mode (Planned)
 
+For stable demos and reproducible evals, a record/replay system is planned:
+
+```bash
+RECORD_MODE=record   # Save tool responses to fixtures
+RECORD_MODE=replay   # Serve responses from fixtures
 ```
-RECORD_MODE=record
-RECORD_MODE=replay
-```
 
-Record mode:
-- Saves tool responses to fixtures
-
-Replay mode:
-- Serves responses from fixtures
+**Benefits:**
 - Ensures repeatable runs for eval comparison
+- Eliminates nondeterminism from LLM tool outputs
+- Allows offline testing without live dependencies
 
-# 10. Observability Model
+**Status:** Infrastructure planned, not yet implemented. Consider using `temperature=0` for now.
 
-Every investigation produces:
+# 11. Observability Model (Day 6 - Planned)
 
-- A root trace (ticket.id)
-- Spans for:
-  - triage
-  - each tool call
-  - each LLM call
-  - verification step
-  - finalize step
+Once OpenTelemetry is integrated, every investigation will produce:
 
-Span attributes include:
-- variant
-- ticket.id
-- tool.name
-- llm.provider
-- llm.model
-- latency
-- error flags
+**Root trace** (keyed by ticket.id):
+- Spans for each workflow phase:
+  - `webhook.receive` (backend)
+  - `case_file.normalize` (backend)
+  - `agent.investigate` (backend → agent)
+    - `triage_phase` (agent)
+    - `gather_phase` (agent)
+      - `tool.query_logs` (tool call)
+      - `tool.search_incidents` (tool call)
+      - `tool.get_deploys` (tool call)
+    - `verify_phase` (agent)
+    - `finalize_phase` (agent)
+  - `frappe.post_results` (backend)
 
-Exported via Braintrust OTel SDK integration.
+**Span attributes:**
+- `variant` - baseline/improved
+- `ticket.id` - HD-000123
+- `ticket.priority` - high/medium/low
+- `customer.tier` - enterprise/business/free
+- `tool.name` - query_logs, search_incidents, etc.
+- `tool.result_count` - number of results
+- `llm.provider` - anthropic
+- `llm.model` - claude-3-5-sonnet-20241022
+- `llm.tokens.prompt` - token count
+- `llm.tokens.completion` - token count
+- `investigation.confidence` - 0.0-1.0
+- `investigation.should_escalate` - true/false
 
-# 11. Security Considerations (Demo Scope)
+**Export:** Via Braintrust OTel SDK integration to https://www.braintrust.dev
 
-- Do not expose API keys in tickets
-- Redact sensitive tokens in logs
-- Keep `.env` out of version control
-- Safe mode toggle for external calls
+**Current Status:** Logging only (console output). OpenTelemetry instrumentation planned for Day 6.
+
+# 12. Security Considerations (Demo Scope)
+
+**Current implementation:**
+- ✅ `.env` excluded from version control
+- ✅ API keys never logged or posted to tickets
+- ✅ Basic auth for Frappe API (base64-encoded API key:secret)
+- ✅ CORS middleware configured for demo (allow all origins)
+
+**Recommendations for production:**
+- Use proper authentication/authorization (OAuth, JWT)
+- Implement rate limiting on webhook endpoints
+- Redact PII from logs and traces
+- Use secrets management (e.g., AWS Secrets Manager, Vault)
+- Restrict CORS to known origins
+- Add input validation and sanitization
+- Implement audit logging for compliance
 
 # 12. Roadmap
 
-- [ ] Docker Compose full integration
-- [ ] Backend webhook + tool endpoints
-- [ ] ADK workflow implementation
-- [ ] Qdrant ingestion pipeline
-- [ ] OpenTelemetry instrumentation
-- [ ] Braintrust exporter wiring
-- [ ] Variant toggles
-- [ ] Offline eval runner
-- [ ] Demo fixtures
+## Completed (v0.3.0)
+
+- ✅ Docker Compose full integration (Day 1)
+- ✅ Frappe Helpdesk infrastructure with automated initialization (Day 1)
+- ✅ Backend webhook + tool endpoints (Day 2)
+- ✅ ADK workflow implementation with 4-phase investigation (Day 3)
+- ✅ Qdrant ingestion pipeline with local embeddings (Day 4)
+- ✅ Idempotent deployment system (Day 4)
+- ✅ Complete Frappe API integration (Day 5)
+  - Service account for automated responses
+  - Demo customer account
+  - Customer-facing communications in portal
+  - Internal notes and drafts
+- ✅ Customer-app frontend for ticket generation
+- ✅ Comprehensive documentation
+
+## In Progress
+
+- 🚧 OpenTelemetry instrumentation (Day 6 - planned)
+- 🚧 Braintrust exporter wiring (Day 6 - planned)
+
+## Planned
+
+- [ ] Variant toggles (baseline vs improved) (Day 7)
+- [ ] Offline eval runner with custom scorers (Day 7)
+- [ ] Record/replay mode for deterministic demos
+- [ ] Customer-app integration with Docker Compose
+- [ ] Real log aggregation system integration
+- [ ] Expanded test dataset (20+ scenarios)
 
 # 13. References
 
-- Frappe Helpdesk: https://github.com/frappe/helpdesk
-- Google ADK: https://google.github.io/adk-docs/
-- Braintrust OTel Integration: https://www.braintrust.dev/docs/integrations/sdk-integrations/opentelemetry
-- Qdrant: https://qdrant.tech/
+**Technologies:**
+- [Frappe Helpdesk](https://github.com/frappe/helpdesk) - Open source ticketing system
+- [Google ADK](https://google.github.io/adk-docs/) - Agent Development Kit
+- [Anthropic Claude](https://www.anthropic.com/api) - LLM provider
+- [Qdrant](https://qdrant.tech/) - Vector database
+- [sentence-transformers](https://www.sbert.net/) - Local embeddings
+- [Braintrust](https://www.braintrust.dev/) - Observability and evaluation platform
+- [Braintrust OTel Integration](https://www.braintrust.dev/docs/integrations/sdk-integrations/opentelemetry) - OpenTelemetry exporter
+
+**Documentation:**
+- [Quick Start Guide](docs/quickstart.md) - Setup instructions
+- [Architecture](docs/architecture.md) - System design and data flow
+- [Planning](docs/planning.md) - Project goals and milestones
+- [Implementation](docs/implementation.md) - Technical decisions and progress
+- [Changelog](docs/changelog.md) - Version history
+- [Issues](docs/issues.md) - Known issues and limitations
 
 # 14. Why This Project Exists
 
-This is not just a chatbot demo.
+This is **not just a chatbot demo**.
 
-It is a demonstration of:
-- How to build multi-step AI systems responsibly
-- How to observe and debug them
-- How to prevent regressions with evals
-- How to move from “vibes” to measurable quality
+It is a demonstration of **modern LLM engineering practices**:
 
-The goal is to make the improvement visible, reproducible, and defensible.
+✅ **Multi-step agent workflows** - Not just prompt → response, but planning → evidence gathering → verification → synthesis
+
+✅ **Tool-rich investigations** - Real integration with retrieval, logs, deploys, and customer context
+
+✅ **Structured outputs** - Not vibes-based, but schema-validated results with confidence scores
+
+✅ **Observability-first** - Every step traced and inspectable (Day 6+)
+
+✅ **Eval-driven improvement** - Measurable quality metrics, not just "it feels better"
+
+✅ **End-to-end integration** - From customer portal to ticket to investigation to resolution
+
+✅ **Production-ready patterns** - Idempotent deployment, service accounts, proper attribution
+
+**The goal:** Make AI system improvements **visible, reproducible, and defensible**.
