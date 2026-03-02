@@ -68,7 +68,7 @@ fi
 # Get script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-TEMPLATE_DIR="$ROOT_DIR/projects/template"
+TEMPLATE_DIR="$ROOT_DIR/projects/_template"
 TARGET_DIR="$ROOT_DIR/projects/$PROJECT_NAME"
 
 # Check if template exists

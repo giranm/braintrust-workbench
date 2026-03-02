@@ -68,13 +68,13 @@ project_path = f"projects/{project_name}"
 os.makedirs(project_path, exist_ok=False)
 
 # Copy template files
-copy_file("projects/template/.mise.toml", f"{project_path}/.mise.toml")
-copy_file("projects/template/.env.example", f"{project_path}/.env.example")
-copy_file("projects/template/README.md", f"{project_path}/README.md")
-copy_file("projects/template/CLAUDE.md", f"{project_path}/CLAUDE.md")
+copy_file("projects/_template/.mise.toml", f"{project_path}/.mise.toml")
+copy_file("projects/_template/.env.example", f"{project_path}/.env.example")
+copy_file("projects/_template/README.md", f"{project_path}/README.md")
+copy_file("projects/_template/CLAUDE.md", f"{project_path}/CLAUDE.md")
 
 # Copy docs directory
-copy_directory("projects/template/docs/", f"{project_path}/docs/")
+copy_directory("projects/_template/docs/", f"{project_path}/docs/")
 ```
 
 ### 4. Replace Template Placeholders

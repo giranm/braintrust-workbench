@@ -16,7 +16,7 @@ braintrust-workbench/
 │   └── new-project.sh      # Bootstrap new projects
 └── projects/
     ├── README.md           # Index of all projects
-    ├── template/           # Template for new projects
+    ├── _template/          # Template for new projects
     └── [project-name]/     # Individual isolated projects
         ├── .mise.toml      # Project-specific tool versions
         ├── CLAUDE.md       # Project-specific guidance
@@ -71,7 +71,7 @@ The skill will guide you through:
 ```
 
 **Manual setup**:
-1. Copy `projects/template/` to `projects/<project-name>/`
+1. Copy `projects/_template/` to `projects/<project-name>/`
 2. Update `.mise.toml` with required tool versions
 3. Replace placeholders in `CLAUDE.md` and `README.md`
 4. Initialize the project (uv init or npm init)

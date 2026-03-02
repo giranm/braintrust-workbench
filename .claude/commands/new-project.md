@@ -92,7 +92,7 @@ Next steps:
 
 ## Notes
 
-- Uses the existing template structure in `projects/template/`
+- Uses the existing template structure in `projects/_template/`
 - Maintains isolation via mise configuration
 - Follows Braintrust patterns from docs and cookbook
 - Creates runnable projects with sensible defaults
