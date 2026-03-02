@@ -227,3 +227,27 @@ When working on this project:
 ## Notes
 
 No open issues at this time. This is initial setup.
+
+## Braintrust API Timeout During Dataset Fetching (2026-03-02)
+
+**Issue**: Multi-turn evaluation occasionally fails with timeout error when fetching dataset metadata.
+
+**Error**:
+```
+braintrust.util.AugmentedHTTPError: {"message": "Endpoint request timed out"}
+```
+
+**Root Cause**: Transient Braintrust API timeout when calling `dataset.version` during experiment initialization.
+
+**Impact**: 
+- Code is correct, issue is with Braintrust API availability
+- Single-turn evaluation works fine
+- Multi-turn evaluation fails intermittently
+
+**Workaround**:
+- Retry the evaluation
+- Issue typically resolves after a few minutes
+- Not a code bug - Braintrust API infrastructure issue
+
+**Status**: Monitoring - may resolve as Braintrust scales their infrastructure.
+
