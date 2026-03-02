@@ -4,7 +4,19 @@ This directory contains individual Braintrust demo projects. Each project is iso
 
 ## Available Projects
 
-<!-- Add your projects here as you create them -->
+### [Multi Agent Chat Demo](./multi-agent-chat-demo/)
+
+**Type**: Python
+**Focus**: Observability - Demonstrates Braintrust logging and tracing for multi-agent chat systems
+
+Multi-agent chat with orchestration showcasing:
+- Agent conversation logging with full context
+- Tool use tracing across multiple agents
+- Multi-agent orchestration and coordination
+
+See [project README](./multi-agent-chat-demo/README.md) for details.
+
+---
 
 ### Template
 

@@ -1,0 +1,34 @@
+# Production deployment with nginx serving frontend
+services:
+  app:
+    image: multi-agent-chat-demo-app
+    environment:
+      REFLEX_DB_URL: sqlite:///data/reflex.db
+      BRAINTRUST_API_KEY: ${BRAINTRUST_API_KEY:-your-braintrust-key}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-your-anthropic-key}
+      PROJECT_NAME: ${PROJECT_NAME:-multi-agent-chat-demo}
+    build:
+      context: .
+    ports:
+      - "8000:8000"  # Expose backend for WebSocket connections
+    volumes:
+      - db-data:/app/data
+      - upload-data:/app/uploaded_files
+      - static-files:/app/.web/build/client
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static-files:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  upload-data:
+  static-files:

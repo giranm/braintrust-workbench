@@ -1,0 +1,7 @@
+# mise configuration for multi-agent-chat-demo
+[tools]
+python = "3.12"
+uv = "latest"
+
+[env]
+_.file = ".env"

@@ -1,0 +1,29 @@
+/* Custom styles for better light mode visibility */
+
+/* Input placeholder - darker in light mode */
+.rt-TextFieldInput::placeholder {
+    color: #4b5563 !important;
+}
+
+/* Input border - darker in light mode */
+.rt-TextFieldRoot {
+    border-color: #9ca3af !important;
+}
+
+/* Empty state text */
+.empty-state-text {
+    color: #4b5563 !important;
+}
+
+/* Theme-specific overrides */
+[data-theme="dark"] .rt-TextFieldInput::placeholder {
+    color: #9ca3af !important;
+}
+
+[data-theme="dark"] .rt-TextFieldRoot {
+    border-color: #374151 !important;
+}
+
+[data-theme="dark"] .empty-state-text {
+    color: #d1d5db !important;
+}
