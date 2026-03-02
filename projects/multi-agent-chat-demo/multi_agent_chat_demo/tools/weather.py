@@ -4,7 +4,7 @@ import httpx
 from braintrust import traced
 
 
-@traced
+@traced(name="geocoding")
 async def get_coordinates(city: str) -> tuple[float, float]:
     """
     Geocode city name to coordinates using Open-Meteo Geocoding API.
@@ -18,6 +18,8 @@ async def get_coordinates(city: str) -> tuple[float, float]:
     Raises:
         ValueError: If city not found
     """
+    from braintrust import current_span
+
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "https://geocoding-api.open-meteo.com/v1/search",
@@ -31,10 +33,25 @@ async def get_coordinates(city: str) -> tuple[float, float]:
             raise ValueError(f"City '{city}' not found")
 
         result = data["results"][0]
-        return result["latitude"], result["longitude"]
+        coords = (result["latitude"], result["longitude"])
+
+        # Add rich metadata to span
+        span = current_span()
+        if span:
+            span.log(
+                input={"city": city},
+                output={"latitude": coords[0], "longitude": coords[1]},
+                metadata={
+                    "service": "open-meteo-geocoding",
+                    "api_endpoint": "geocoding-api.open-meteo.com/v1/search",
+                    "found": True,
+                }
+            )
+
+        return coords
 
 
-@traced
+@traced(name="weather_api")
 async def get_weather(latitude: float, longitude: float) -> dict:
     """
     Fetch current weather from Open-Meteo API.
@@ -46,6 +63,8 @@ async def get_weather(latitude: float, longitude: float) -> dict:
     Returns:
         Dictionary with weather data including temperature, wind speed, and weather code
     """
+    from braintrust import current_span
+
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "https://api.open-meteo.com/v1/forecast",
@@ -66,7 +85,7 @@ async def get_weather(latitude: float, longitude: float) -> dict:
         weather_code = current.get("weather_code", 0)
         weather_desc = _get_weather_description(weather_code)
 
-        return {
+        result = {
             "temperature": current.get("temperature_2m"),
             "temperature_unit": data.get("current_units", {}).get("temperature_2m", "°C"),
             "wind_speed": current.get("wind_speed_10m"),
@@ -77,6 +96,23 @@ async def get_weather(latitude: float, longitude: float) -> dict:
             "weather_description": weather_desc,
             "timezone": data.get("timezone", "UTC"),
         }
+
+        # Add rich metadata to span
+        span = current_span()
+        if span:
+            span.log(
+                input={"latitude": latitude, "longitude": longitude},
+                output=result,
+                metadata={
+                    "service": "open-meteo-weather",
+                    "api_endpoint": "api.open-meteo.com/v1/forecast",
+                    "weather_condition": weather_desc,
+                    "temperature_c": result["temperature"],
+                    "timezone": result["timezone"],
+                }
+            )
+
+        return result
 
 
 def _get_weather_description(code: int) -> str:
@@ -118,7 +154,7 @@ def _get_weather_description(code: int) -> str:
     return weather_codes.get(code, "Unknown")
 
 
-@traced
+@traced(name="get_weather_for_city")
 async def get_weather_for_city(city: str) -> dict:
     """
     Get weather for a city by name (combines geocoding + weather fetch).
@@ -129,6 +165,8 @@ async def get_weather_for_city(city: str) -> dict:
     Returns:
         Dictionary with weather data and location info
     """
+    from braintrust import current_span
+
     # Geocode city
     latitude, longitude = await get_coordinates(city)
 
@@ -140,10 +178,24 @@ async def get_weather_for_city(city: str) -> dict:
     weather["latitude"] = latitude
     weather["longitude"] = longitude
 
+    # Add rich metadata to span
+    span = current_span()
+    if span:
+        span.log(
+            input={"city": city},
+            output=weather,
+            metadata={
+                "city": city,
+                "coordinates": f"{latitude}, {longitude}",
+                "weather_summary": f"{weather['weather_description']}, {weather['temperature']}{weather['temperature_unit']}",
+                "tool_type": "weather_lookup",
+            }
+        )
+
     return weather
 
 
-@traced
+@traced(name="format_response")
 def format_weather_response(weather_data: dict) -> str:
     """
     Format weather data into a human-readable response.
@@ -154,6 +206,8 @@ def format_weather_response(weather_data: dict) -> str:
     Returns:
         Formatted weather report string
     """
+    from braintrust import current_span
+
     city = weather_data.get("city", "Unknown location")
     temp = weather_data.get("temperature")
     temp_unit = weather_data.get("temperature_unit", "°C")
@@ -163,10 +217,25 @@ def format_weather_response(weather_data: dict) -> str:
     humidity_unit = weather_data.get("humidity_unit", "%")
     description = weather_data.get("weather_description", "Unknown")
 
-    return (
+    formatted = (
         f"🌤️ Weather in {city}:\n"
         f"   Condition: {description}\n"
         f"   Temperature: {temp}{temp_unit}\n"
         f"   Wind Speed: {wind} {wind_unit}\n"
         f"   Humidity: {humidity}{humidity_unit}"
     )
+
+    # Add metadata to span
+    span = current_span()
+    if span:
+        span.log(
+            input={"raw_data": weather_data},
+            output={"formatted_text": formatted},
+            metadata={
+                "city": city,
+                "format_type": "human_readable",
+                "char_count": len(formatted),
+            }
+        )
+
+    return formatted

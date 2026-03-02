@@ -1,0 +1,82 @@
+[
+  {
+    "messages": [
+      {"role": "user", "content": "What's the weather in London?"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "How about Paris?"},
+      {"role": "assistant", "content": "placeholder"}
+    ],
+    "metadata": {
+      "category": "sequential_cities",
+      "expected_tools": ["get_weather"],
+      "turn_count": 2
+    }
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "Tell me the weather in Tokyo"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "Is it good weather for outdoor activities?"},
+      {"role": "assistant", "content": "placeholder"}
+    ],
+    "metadata": {
+      "category": "follow_up_question",
+      "expected_tools": ["get_weather"],
+      "turn_count": 2
+    }
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "What's the temperature in New York?"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "And the humidity?"},
+      {"role": "assistant", "content": "placeholder"}
+    ],
+    "metadata": {
+      "category": "clarifying_question",
+      "expected_tools": ["get_weather"],
+      "turn_count": 2
+    }
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "How's the weather in Berlin?"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "What about Munich?"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "Which one is warmer?"},
+      {"role": "assistant", "content": "placeholder"}
+    ],
+    "metadata": {
+      "category": "comparison",
+      "expected_tools": ["get_weather"],
+      "turn_count": 3
+    }
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "I'm planning a trip. What's the weather in Sydney?"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "Should I bring a jacket?"},
+      {"role": "assistant", "content": "placeholder"}
+    ],
+    "metadata": {
+      "category": "recommendation_request",
+      "expected_tools": ["get_weather"],
+      "turn_count": 2
+    }
+  },
+  {
+    "messages": [
+      {"role": "user", "content": "What's the weather like in San Francisco?"},
+      {"role": "assistant", "content": "placeholder"},
+      {"role": "user", "content": "Is it windy there?"},
+      {"role": "assistant", "content": "placeholder"}
+    ],
+    "metadata": {
+      "category": "specific_condition_follow_up",
+      "expected_tools": ["get_weather"],
+      "turn_count": 2
+    }
+  }
+]

@@ -171,6 +171,100 @@ This document tracks implementation decisions, technical notes, and progress dur
 
 ---
 
+### 2026-03-02 - Evaluation System (v0.3.0)
+
+**What was implemented**:
+- Comprehensive evaluation suite with custom scorers and LLM-as-a-judge
+- Single-turn and multi-turn conversation evaluations
+- Reusable scorer functions for online evaluation
+- Test datasets with 16 total test cases
+- Setup scripts for dataset initialization
+
+**Technical approach**:
+- **Scorer patterns from l8r app**:
+  - Custom scorers query `trace.getSpans()` to inspect span hierarchy
+  - LLM-as-a-judge scorers use Claude Haiku for quality evaluation
+  - Scorers return standardized dict: `{name, score, metadata}`
+- **Custom scorers**:
+  - `tool_call_check`: Queries tool-type spans, calculates overlap with expected tools
+  - `faithfulness_check`: Extracts tool outputs from spans, validates no hallucination
+- **LLM-as-a-judge scorers** (using Claude Haiku 4.5):
+  - `weather_accuracy_check`: Validates correct city and weather information
+  - `helpfulness_check`: Evaluates user-friendliness and completeness
+  - `response_structure_check`: Checks formatting and presentation
+  - `conversation_coherence_check`: Multi-turn conversation flow
+- **Evaluation scripts**:
+  - `evals/weather_conversation.py`: Single-turn evaluation (10 test cases)
+  - `evals/multi_turn_conversation.py`: Multi-turn evaluation (6 scenarios)
+  - `evals/run_all_evals.py`: Runner for complete test suite
+  - `evals/setup_evals.py`: Dataset initialization in Braintrust
+- **Test datasets**:
+  - `sample_conversations.json`: Single-turn weather queries
+  - `multi_turn_conversations.json`: Multi-turn conversation scenarios
+- **Online evaluation support**:
+  - Scorers can be imported and used in production agent
+  - Example in `evals/online_eval_example.py`
+
+**Challenges encountered**:
+- **Braintrust Eval API**: Python SDK differs slightly from TypeScript version
+  - **Resolution**: Adapted l8r patterns to Python async/await syntax
+- **Scorer signatures**: Matching Braintrust's expected scorer function signature
+  - **Resolution**: Created wrapper functions in eval scripts to normalize signatures
+- **Anthropic client in scorers**: Needed LLM client for judge scorers
+  - **Resolution**: Created global client with lazy initialization pattern
+- **Trace access**: Scorers need access to span data for custom metrics
+  - **Resolution**: Used `trace.getSpans(span_type=["tool"])` pattern from l8r
+
+**Code locations**:
+- `evals/scorers.py` - Reusable scorer functions
+- `evals/weather_conversation.py` - Single-turn evaluation script
+- `evals/multi_turn_conversation.py` - Multi-turn evaluation script
+- `evals/setup_evals.py` - Dataset initialization
+- `evals/run_all_evals.py` - Full test suite runner
+- `evals/online_eval_example.py` - Example of online evaluation
+- `evals/datasets/sample_conversations.json` - Single-turn test cases (10)
+- `evals/datasets/multi_turn_conversations.json` - Multi-turn scenarios (6)
+- `evals/README.md` - Comprehensive evaluation documentation
+
+**Testing**:
+- Created 10 single-turn test cases covering various query types
+- Created 6 multi-turn conversation scenarios
+- Test categories: single_city, specific_metrics, conversational, recommendation, follow_up, comparison
+- Verified scorer functions work correctly in isolation
+
+**Decisions**:
+- **Python scorers over TypeScript**: Keep entire project in Python for consistency
+  - Enables code reuse between evals and production agent
+  - Simpler development environment (no polyglot setup)
+- **Claude Haiku for judge scorers**: Same model as agent, cost-effective
+  - Haiku is $1/MTok vs $3 for Sonnet
+  - Sufficient for binary Y/N judgments
+  - Consistent with agent's capabilities
+- **Separate eval scripts for single/multi-turn**: Better organization
+  - Different scorer requirements (coherence only for multi-turn)
+  - Easier to run targeted evaluations
+  - Clearer separation of concerns
+- **Online eval support**: Make scorers usable in production
+  - Real-time quality monitoring in live agent
+  - Early detection of quality issues
+  - Continuous evaluation pattern from Braintrust best practices
+- **l8r patterns**: Follow proven evaluation architecture
+  - Custom scorers query span data for tool verification
+  - LLM-as-a-judge for subjective quality metrics
+  - Dataset management via Braintrust SDK
+  - Standardized scorer return format
+
+**Evaluation metrics targets**:
+- ToolCallCheck: 1.0 (100% - must call correct tool)
+- WeatherAccuracyCheck: ≥ 0.9 (90%+)
+- HelpfulnessCheck: ≥ 0.9 (90%+)
+- ResponseStructureCheck: ≥ 0.8 (80%+)
+- FaithfulnessCheck: 1.0 (100% - no hallucination)
+- ConversationCoherenceCheck: ≥ 0.9 (90%+)
+- ContextMaintenance: ≥ 0.8 (80%+)
+
+---
+
 ### [Date] - [Feature/Component Name]
 
 **What was implemented**:
@@ -295,25 +389,78 @@ Use Open-Meteo API for weather data.
 ## Braintrust Integration Notes
 
 ### Logging & Tracing
-- **Implementation**: [How logging is set up]
-- **Location**: `src/[file]:[line]`
-- **Patterns used**: [Reference to cookbook/docs]
+- **Implementation**: Full multi-turn conversation tracing with hierarchical spans
+  - Conversation-level root span tracks entire conversation
+  - Turn-level child spans for each user-agent exchange
+  - Tool-type spans for weather API calls
+  - LLM-type spans auto-instrumented via `wrap_anthropic()`
+- **Location**:
+  - `multi_agent_chat_demo/agents/weather_agent.py:23-25` - LLM instrumentation
+  - `multi_agent_chat_demo/agents/weather_agent.py:59-79` - Conversation span management
+  - `multi_agent_chat_demo/agents/weather_agent.py:140-148` - Tool span creation
+  - `multi_agent_chat_demo/tools/weather.py` - All functions decorated with `@traced`
+- **Patterns used**:
+  - [Braintrust Logging Guide](https://www.braintrust.dev/docs/guides/logging)
+  - [Multi-turn conversation tracking](https://github.com/braintrustdata/l8r) - Similar to l8r app pattern
 
 ### Evaluations
-- **Framework**: [How evals are structured]
-- **Location**: `src/eval.py` or `tests/`
-- **Metrics**: [What metrics are being tracked]
-- **Scorers**: [Custom scorers if any]
+- **Framework**: Comprehensive eval suite with custom and LLM-as-a-judge scorers
+- **Location**: `evals/` directory
+  - `evals/scorers.py` - Reusable scorer functions
+  - `evals/weather_conversation.py` - Single-turn eval (10 test cases)
+  - `evals/multi_turn_conversation.py` - Multi-turn eval (6 scenarios)
+- **Metrics tracked**:
+  - **Tool accuracy**: Correct tool calling via span query
+  - **Response quality**: Accuracy, helpfulness, structure (LLM-as-judge)
+  - **Faithfulness**: No hallucination, grounded in tool results
+  - **Conversation coherence**: Multi-turn context maintenance
+- **Scorers**:
+  - **Custom scorers** (query trace spans):
+    - `tool_call_check`: Validates expected tools were called
+    - `faithfulness_check`: Ensures response grounded in tool outputs
+  - **LLM-as-a-judge scorers** (Claude Haiku 4.5):
+    - `weather_accuracy_check`: City and weather data validation
+    - `helpfulness_check`: User-friendliness evaluation
+    - `response_structure_check`: Formatting and presentation
+    - `conversation_coherence_check`: Multi-turn flow quality
+    - `context_maintenance_scorer`: Context tracking across turns
 
 ### Datasets
-- **Creation**: [How datasets are created/managed]
-- **Location**: [Where datasets are stored/defined]
-- **Format**: [Structure of data]
+- **Creation**: JSON files uploaded to Braintrust via SDK
+  - `init_dataset()` creates/gets dataset
+  - `dataset.insert()` adds test cases
+- **Location**:
+  - Definitions: `evals/datasets/`
+    - `sample_conversations.json` - Single-turn queries
+    - `multi_turn_conversations.json` - Multi-turn scenarios
+  - Braintrust: https://www.braintrust.dev/app/multi-agent-chat-demo/datasets
+- **Format**:
+  ```json
+  {
+    "input": "user query" or {"messages": [...]},
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["temperature"],
+      "city": "London"
+    },
+    "metadata": {
+      "category": "single_city",
+      "expected_tools": ["get_weather"]
+    }
+  }
+  ```
 
 ### Experiments
-- **Setup**: [How experiments are configured]
-- **Comparison**: [What is being compared]
-- **Results**: [Reference to results or Braintrust dashboard]
+- **Setup**: Run via `Eval()` function with task, data, and scorers
+- **Naming convention**: `{type}-eval-{YYYY-MM-DD}`
+  - `weather-eval-2026-03-02`
+  - `multi-turn-eval-2026-03-02`
+- **Comparison**:
+  - Compare different prompt versions
+  - Compare different agent implementations
+  - Track quality metrics over time
+- **Results**: View at https://www.braintrust.dev/app/multi-agent-chat-demo
+- **Online evaluation**: Scorers can be used in production for real-time monitoring (see `evals/online_eval_example.py`)
 
 ---
 

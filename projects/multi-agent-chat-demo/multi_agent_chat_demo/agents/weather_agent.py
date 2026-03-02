@@ -136,28 +136,56 @@ class WeatherAgent:
 
                         # Execute weather tool with explicit span
                         if tool_name == "get_weather":
-                            # Create a tool execution span
-                            @traced(name=f"tool_execution:{tool_name}")
-                            async def execute_tool():
+                            # Create a TOOL type span (not function type)
+                            with logger.start_span(
+                                name=tool_name,
+                                type="tool",  # Explicitly set as tool type
+                                input={"city": tool_input["city"]},
+                                metadata={
+                                    "tool_name": tool_name,
+                                    "city": tool_input["city"],
+                                }
+                            ) as tool_span:
                                 try:
                                     weather_data = await get_weather_for_city(tool_input["city"])
                                     formatted_weather = format_weather_response(weather_data)
-                                    return {
+
+                                    result = {
                                         "type": "tool_result",
                                         "tool_use_id": block.id,
                                         "content": formatted_weather,
                                     }
+
+                                    # Log success to tool span
+                                    tool_span.log(
+                                        output={"success": True, "result": result},
+                                        metadata={
+                                            "status": "success",
+                                            "tool_use_id": block.id,
+                                        }
+                                    )
+
+                                    tool_results.append(result)
                                 except Exception as e:
                                     error_msg = f"Error fetching weather: {str(e)}"
-                                    return {
+                                    error_result = {
                                         "type": "tool_result",
                                         "tool_use_id": block.id,
                                         "content": error_msg,
                                         "is_error": True,
                                     }
 
-                            result = await execute_tool()
-                            tool_results.append(result)
+                                    # Log error to tool span
+                                    tool_span.log(
+                                        output={"success": False, "error": error_msg},
+                                        metadata={
+                                            "status": "error",
+                                            "error_type": type(e).__name__,
+                                            "tool_use_id": block.id,
+                                        }
+                                    )
+
+                                    tool_results.append(error_result)
 
                 # Continue conversation with tool results
                 messages.append({"role": "assistant", "content": response.content})
@@ -189,11 +217,25 @@ class WeatherAgent:
                 span_attributes={
                     "turn_number": turn_number,
                     "message": message,
+                    "conversation_id": conversation_id,
+                    "agent": self.name,
                 },
-                input={"message": message, "conversation_history": conversation_history},
+                input={
+                    "message": message,
+                    "conversation_history": conversation_history,
+                    "history_length": len(conversation_history) if conversation_history else 0,
+                },
             ) as turn_span:
                 result = await _execute_turn()
-                turn_span.log(output=result)
+                turn_span.log(
+                    output={"response": result},
+                    metadata={
+                        "turn_number": turn_number,
+                        "input_length": len(message),
+                        "output_length": len(result),
+                        "agent": self.name,
+                    }
+                )
                 return result
         else:
             # No conversation tracking, just execute

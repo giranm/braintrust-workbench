@@ -120,6 +120,16 @@ multi-agent-chat-demo/
 │       ├── app.py              # Reflex app entry
 │       ├── state.py            # Chat state management
 │       └── components.py       # UI components
+├── evals/                      # Evaluation suite
+│   ├── README.md              # Evaluation documentation
+│   ├── scorers.py             # Reusable scorer functions
+│   ├── weather_conversation.py  # Single-turn evals
+│   ├── multi_turn_conversation.py  # Multi-turn evals
+│   ├── setup_evals.py         # Dataset initialization
+│   ├── run_all_evals.py       # Run all evaluations
+│   └── datasets/              # Test case datasets
+│       ├── sample_conversations.json
+│       └── multi_turn_conversations.json
 ├── multi_agent_chat_demo.py    # Reflex entry point
 ├── rxconfig.py                 # Reflex configuration
 ├── Dockerfile                  # Docker image definition
@@ -220,17 +230,50 @@ uv run python src/main.py
 
 ### Evaluations
 
+This project includes a comprehensive evaluation suite with custom scorers and LLM-as-a-judge patterns.
+
+**Setup (one-time):**
+```bash
+# With Docker
+docker compose exec app uv run python evals/setup_evals.py
+
+# Local development
+uv run python evals/setup_evals.py
+```
+
+**Run evaluations:**
+
 **With Docker:**
 ```bash
-docker compose exec app uv run python src/eval.py
+# Run all evaluations
+docker compose exec app uv run python evals/run_all_evals.py
+
+# Run single-turn only
+docker compose exec app uv run python evals/weather_conversation.py
+
+# Run multi-turn only
+docker compose exec app uv run python evals/multi_turn_conversation.py
 ```
 
 **Local development:**
 ```bash
-uv run python src/eval.py
+# Run all evaluations
+uv run python evals/run_all_evals.py
+
+# Run single-turn only
+uv run python evals/weather_conversation.py
+
+# Run multi-turn only
+uv run python evals/multi_turn_conversation.py
 ```
 
 View results at: https://www.braintrust.dev/app
+
+See **[evals/README.md](./evals/README.md)** for detailed documentation on:
+- Custom scorers (tool call checking, faithfulness)
+- LLM-as-a-judge scorers (helpfulness, accuracy, coherence)
+- Adding new test cases
+- Using scorers for online evaluation
 
 ### Tests
 

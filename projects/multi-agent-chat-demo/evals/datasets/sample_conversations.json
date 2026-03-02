@@ -1,0 +1,130 @@
+[
+  {
+    "input": "What's the weather in London?",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["temperature", "London"],
+      "city": "London"
+    },
+    "metadata": {
+      "category": "single_city",
+      "difficulty": "easy",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "How's the weather in Paris today?",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["temperature", "Paris"],
+      "city": "Paris"
+    },
+    "metadata": {
+      "category": "single_city",
+      "difficulty": "easy",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "Is it raining in Tokyo right now?",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["weather", "Tokyo"],
+      "city": "Tokyo"
+    },
+    "metadata": {
+      "category": "single_city_specific_condition",
+      "difficulty": "medium",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "What's the temperature in New York?",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["temperature", "New York"],
+      "city": "New York"
+    },
+    "metadata": {
+      "category": "single_city",
+      "difficulty": "easy",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "Can you tell me about the weather conditions in Berlin? I'm planning to go outside.",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["weather", "Berlin", "outdoor"],
+      "city": "Berlin"
+    },
+    "metadata": {
+      "category": "conversational",
+      "difficulty": "medium",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "Hello!",
+    "expected": {
+      "tools": [],
+      "contains": ["weather", "help", "ask"]
+    },
+    "metadata": {
+      "category": "greeting",
+      "difficulty": "easy",
+      "expected_tools": []
+    }
+  },
+  {
+    "input": "What's the humidity and wind speed in Sydney?",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["humidity", "wind", "Sydney"],
+      "city": "Sydney"
+    },
+    "metadata": {
+      "category": "specific_metrics",
+      "difficulty": "medium",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "I'm thinking of visiting San Francisco next week. What's the weather like there?",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["weather", "San Francisco"],
+      "city": "San Francisco"
+    },
+    "metadata": {
+      "category": "conversational",
+      "difficulty": "medium",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "Tell me the current weather in Mumbai and recommend if it's good for outdoor activities.",
+    "expected": {
+      "tools": ["get_weather"],
+      "contains": ["weather", "Mumbai", "outdoor"],
+      "city": "Mumbai"
+    },
+    "metadata": {
+      "category": "recommendation",
+      "difficulty": "hard",
+      "expected_tools": ["get_weather"]
+    }
+  },
+  {
+    "input": "What can you help me with?",
+    "expected": {
+      "tools": [],
+      "contains": ["weather", "city", "information"]
+    },
+    "metadata": {
+      "category": "capability_inquiry",
+      "difficulty": "easy",
+      "expected_tools": []
+    }
+  }
+]

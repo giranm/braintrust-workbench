@@ -147,7 +147,8 @@ class ChatState(rx.State):
         try:
             agent = self._get_agent()
             conversation_history = []
-            for msg in conv.messages[:-1]:
+            # Exclude the last 2 messages (current user message + loading assistant message)
+            for msg in conv.messages[:-2]:
                 if not msg.is_loading:
                     conversation_history.append({"role": msg.role, "content": msg.content})
 
