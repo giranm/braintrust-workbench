@@ -1,0 +1,11 @@
+# Mise configuration for runtime version management
+# https://mise.jdx.dev/
+
+[tools]
+node = "20"
+python = "3.12"
+terraform = "1.7"
+uv = "latest"
+
+[env]
+_.file = ".env"

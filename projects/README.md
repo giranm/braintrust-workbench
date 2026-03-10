@@ -4,7 +4,22 @@ This directory contains individual Braintrust demo projects. Each project is iso
 
 ## Available Projects
 
-<!-- Add your projects here as you create them -->
+### [Lambda Multi-Turn Conversation](./lambda-multi-turn-conversation/)
+
+**Type**: Node.js Lambda + Python CLI + Terraform
+**Focus**: Multi-turn conversation tracing across stateless Lambda invocations
+
+Key features:
+- Hierarchical Braintrust tracing across multiple Lambda invocations via `span.export()` + `parent`
+- Root "conversation" span with nested turn spans and auto-traced OpenAI calls (`wrapOpenAI`)
+- DynamoDB state persistence for cross-invocation span linking
+- Terraform IaC for Lambda, DynamoDB, IAM, CloudWatch
+- Interactive Python CLI client for testing
+- Makefile automation (setup, build, deploy, test, logs, destroy)
+
+See [project README](./lambda-multi-turn-conversation/README.md) for details.
+
+---
 
 ### Template
 
