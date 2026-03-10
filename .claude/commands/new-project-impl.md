@@ -111,6 +111,7 @@ Create:
 - `pyproject.toml` with project name and dependencies
 - `src/__init__.py`, `src/main.py`, `src/eval.py`
 - `tests/__init__.py`, `tests/test_main.py`
+- **Optional**: `Dockerfile.backend`, `Makefile`, `.dockerignore` for containerization
 
 #### For TypeScript Projects:
 
@@ -119,15 +120,25 @@ Create:
 - `package.json` with project name
 - `tsconfig.json`
 - `src/index.ts`
+- **Optional**: `Dockerfile.frontend`, `Makefile`, `.dockerignore` for containerization
 
 #### For Fullstack:
 
 Create:
 - `.mise.toml` (Python + Node)
 - `backend/` and `frontend/` directories
-- Leave instructions for manual setup
+- **Docker setup (Required for fullstack)**:
+  - Copy `Dockerfile.backend` from template
+  - Copy `Dockerfile.frontend` from template
+  - Copy `docker-compose.yml` from template and replace `[project-name]` placeholders
+  - Copy `Makefile` from template and replace `[Project Name]` and `[project-name]` placeholders
+  - Copy `.dockerignore` from template
+  - Copy `nginx.conf` for frontend static serving (if using React/Vue)
+- Generate backend and frontend boilerplate in respective directories
 
 ### 6. Initialize Environment
+
+#### Local Development Setup
 
 ```bash
 cd projects/<project-name>
@@ -140,6 +151,27 @@ uv sync
 # For TypeScript
 npm install
 ```
+
+#### Docker Setup (for Fullstack)
+
+```bash
+cd projects/<project-name>
+
+# Setup environment file
+make setup
+
+# Build Docker images
+make build
+
+# Start containers
+make up-d
+```
+
+The Docker approach is recommended for fullstack projects as it provides:
+- Consistent environment across all developers
+- Production-like setup
+- Simplified deployment
+- Isolation from host system
 
 ### 7. Update Projects Index
 

@@ -16,6 +16,11 @@
 ├── README.md           # Public documentation
 ├── .env.example        # Environment template
 ├── pyproject.toml      # Python dependencies (UV)
+├── Dockerfile.backend  # Backend Docker configuration (fullstack)
+├── Dockerfile.frontend # Frontend Docker configuration (fullstack)
+├── docker-compose.yml  # Container orchestration (fullstack)
+├── Makefile            # Unified command interface
+├── .dockerignore       # Docker exclusions
 ├── src/
 │   ├── __init__.py
 │   ├── main.py         # Main application
@@ -34,6 +39,8 @@
 - **Python**: [version] (managed by mise)
 - **UV**: Package management
 - **Braintrust**: Evals and observability
+- **Docker & Compose**: Containerization for portability (fullstack projects)
+- **Make**: Unified command interface
 - **[Other libraries]**: [purpose]
 
 ## Braintrust Integration
@@ -76,6 +83,8 @@ OPENAI_API_KEY=your-key-here  # or other LLM provider
 
 ### Running the Project
 
+#### Option 1: Local Development (mise + UV)
+
 ```bash
 # Run main application
 uv run python src/main.py
@@ -86,6 +95,42 @@ uv run python src/eval.py
 # Run tests
 uv run pytest
 ```
+
+#### Option 2: Docker (Recommended for Fullstack)
+
+**For Fullstack projects**, Docker provides maximum portability and consistency:
+
+```bash
+# Setup environment file
+make setup
+
+# Edit .env with your API keys
+# nano .env
+
+# Build and start containers
+make up
+
+# View logs
+make logs
+
+# Run tests
+make test
+
+# Stop containers
+make down
+```
+
+**Available Make commands:**
+- `make help` - Show all available commands
+- `make build` - Build Docker images
+- `make up` / `make up-d` - Start containers (foreground/background)
+- `make down` - Stop and remove containers
+- `make logs` - View container logs
+- `make test` - Run all tests
+- `make shell-backend` - Access backend container shell
+- `make shell-frontend` - Access frontend container shell
+
+See `Makefile` for all available commands.
 
 ## Key Files
 
@@ -183,6 +228,14 @@ Example: `sentiment-eval-baseline-20260216`
 1. **Import errors**: Run `uv sync` to ensure dependencies are installed
 2. **API key errors**: Check `.env` file exists and has valid keys
 3. **Mise tool errors**: Run `mise install` and `mise trust`
+
+### Docker Issues
+
+1. **Containers won't start**: Check logs with `make logs` or `docker compose logs`
+2. **Port already in use**: Stop conflicting services or change ports in `docker-compose.yml`
+3. **Permission errors**: Ensure Docker daemon is running and you have permissions
+4. **Build failures**: Try `make rebuild` to rebuild from scratch
+5. **Volume issues**: Use `make down-v` to remove volumes and start fresh
 
 ### Debugging Braintrust
 

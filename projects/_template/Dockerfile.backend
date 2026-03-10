@@ -1,0 +1,45 @@
+# Python Backend Dockerfile
+# Simple single-stage build with pip
+
+FROM python:3.12-slim
+
+# Create non-root user
+RUN adduser --disabled-password --home /app appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY --chown=appuser:appuser pyproject.toml ./
+
+# Install dependencies directly with pip
+RUN pip install --no-cache-dir \
+    braintrust \
+    fastapi \
+    "uvicorn[standard]" \
+    openai \
+    anthropic \
+    httpx \
+    pydantic \
+    pydantic-settings \
+    python-dotenv
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python3 -c "import sys; sys.exit(0)"
+
+# Run application
+CMD ["python3", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

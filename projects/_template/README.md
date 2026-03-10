@@ -23,6 +23,33 @@ This project showcases **[Braintrust capability]** by [description of the demo].
 
 ## Quick Start
 
+### Option 1: Docker (Recommended for Fullstack)
+
+```bash
+# Navigate to project
+cd projects/[project-name]
+
+# Setup environment
+make setup
+
+# Edit .env with your API keys
+nano .env
+
+# Build and start containers
+make up
+
+# View logs
+make logs
+
+# Run tests
+make test
+
+# Stop containers
+make down
+```
+
+### Option 2: Local Development
+
 ```bash
 # Clone and navigate to project
 cd projects/[project-name]
@@ -75,7 +102,36 @@ OPENAI_API_KEY=your-key-here
 
 ## Running
 
-### Main Application
+### With Docker (Fullstack Projects)
+
+```bash
+# Start all services
+make up
+
+# Or start in background
+make up-d
+
+# View logs
+make logs
+
+# Run tests
+make test
+
+# Access backend shell
+make shell-backend
+
+# Access frontend shell
+make shell-frontend
+
+# Stop services
+make down
+```
+
+See `make help` for all available commands.
+
+### Local Development
+
+#### Main Application
 
 ```bash
 # Python
@@ -85,7 +141,7 @@ uv run python src/main.py
 npm run dev
 ```
 
-### Evaluations
+#### Evaluations
 
 ```bash
 # Run Braintrust evaluations
@@ -94,7 +150,7 @@ uv run python src/eval.py
 # View results at: https://www.braintrust.dev/app
 ```
 
-### Tests
+#### Tests
 
 ```bash
 # Python
