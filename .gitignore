@@ -222,9 +222,20 @@ dist/
 
 # Claude Code
 .claude/cache/
+.claude/skills
 
 # Braintrust (if any local state/cache files)
 .braintrust/
+.bt/
+
+# Cursor editor
+.cursor/
+
+# Agent configurations (tool-generated)
+.agents/
+
+# MCP (Model Context Protocol) config
+.mcp.json
 
 # Environment files (keep .env.example)
 .env
