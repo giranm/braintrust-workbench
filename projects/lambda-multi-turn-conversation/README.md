@@ -100,7 +100,7 @@ make deploy
 
 ```bash
 # Start interactive client
-make test
+make start-client
 
 # Or run directly:
 python client.py --function braintrust-conversation-lambda-dev --profile sandbox
@@ -236,7 +236,7 @@ make outputs
 
 ```bash
 # Run test client
-make test
+make start-client
 
 # Have a multi-turn conversation (3+ messages)
 # Note the conversation ID displayed at start
@@ -291,7 +291,7 @@ make deploy         # Build and deploy Lambda
 
 ### Testing
 ```bash
-make test           # Run interactive test client
+make start-client   # Run interactive test client
 
 # Or with custom parameters:
 python client.py \
@@ -443,7 +443,7 @@ make logs
 1. Edit files in `lambda/src/`
 2. Build: `make build`
 3. Deploy: `make deploy-lambda`
-4. Test: `make test`
+4. Test: `make start-client`
 
 ### Update Infrastructure
 

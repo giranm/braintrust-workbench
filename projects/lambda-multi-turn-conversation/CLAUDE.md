@@ -122,7 +122,7 @@ No `TF_VAR_` prefixes needed - the Makefile's `LOAD_ENV` macro auto-exports them
 make setup          # Install all dependencies
 make deploy-infra   # Deploy AWS infrastructure (Terraform)
 make deploy-lambda  # Build and deploy Lambda code
-make test           # Run interactive CLI client
+make start-client   # Run interactive CLI client
 make logs           # Tail CloudWatch logs
 make clean          # Remove build artifacts
 make destroy        # Tear down all AWS resources
@@ -152,7 +152,7 @@ make destroy        # Tear down all AWS resources
 # After modifying Lambda code:
 make build          # Compile TypeScript
 make deploy-lambda  # Deploy to AWS
-make test           # Test interactively
+make start-client   # Test interactively
 
 # After modifying Terraform:
 make validate       # Check configuration

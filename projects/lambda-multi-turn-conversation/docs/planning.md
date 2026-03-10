@@ -82,7 +82,7 @@ make outputs
 
 ### Conversation Test
 ```bash
-make test
+make start-client
 # Have a 3+ message conversation
 # Verify each turn shows token counts
 ```

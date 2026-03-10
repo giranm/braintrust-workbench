@@ -32,7 +32,7 @@ _No open issues._
 
 ### Client Cannot Invoke Lambda - "AccessDeniedException"
 
-**Error**: `AccessDeniedException` when running `make test`
+**Error**: `AccessDeniedException` when running `make start-client`
 **Cause**: AWS credentials missing or insufficient permissions
 **Resolution**:
 ```bash
