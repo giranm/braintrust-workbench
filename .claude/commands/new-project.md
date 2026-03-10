@@ -12,7 +12,7 @@ When invoked, this skill will:
 
 1. **Ask interactive questions** about the project:
    - Project name (lowercase with hyphens)
-   - Project type (Python, TypeScript, or Fullstack)
+   - Project type (Python, TypeScript, Fullstack, or Custom)
    - Brief description
    - Braintrust focus area
    - Key features/patterns to demonstrate
@@ -24,10 +24,12 @@ When invoked, this skill will:
    - Generate appropriate project files based on type
 
 3. **Set up the environment**:
-   - Create `.mise.toml` with appropriate tool versions
+   - Create `.mise.toml` with appropriate tool versions (except Custom)
    - For Python: Create `pyproject.toml`, source structure
    - For TypeScript: Create `package.json`, `tsconfig.json`
-   - Create `.env.example` with necessary API keys
+   - For Fullstack: Create backend + frontend with Docker setup
+   - For Custom: Create minimal structure with docs/ only
+   - Create `.env.example` with necessary API keys (except Custom)
 
 4. **Initialize the project**:
    - Run `mise install` to install tools
@@ -49,7 +51,11 @@ Or via the Skill tool from Claude Code.
 The skill will ask:
 
 1. **Project name**: What should the project be called? (e.g., "sentiment-eval", "chat-ui")
-2. **Project type**: Python, TypeScript, or Fullstack?
+2. **Project type**: Python, TypeScript, Fullstack, or Custom?
+   - **Python**: Python project with UV package management
+   - **TypeScript**: TypeScript/Node project with npm
+   - **Fullstack**: Python backend + Next.js frontend with Docker
+   - **Custom**: Blank canvas with only docs/ structure (no scaffolding)
 3. **Description**: Brief one-line description of the project
 4. **Focus area**: What Braintrust capability does this showcase? (e.g., "LLM Evaluation", "Prompt Engineering", "A/B Testing")
 5. **Key features**: What are 2-3 key patterns or features this demonstrates?
@@ -63,7 +69,7 @@ The skill will replace these placeholders:
 - `[Brief description...]` → User-provided description
 - `[Braintrust capability]` → User-provided focus area
 - `[Feature/pattern 1]`, `[Feature/pattern 2]`, etc. → User-provided features
-- `[Type]` → Python | TypeScript | Fullstack
+- `[Type]` → Python | TypeScript | Fullstack | Custom
 
 ## Example Flow
 

@@ -31,12 +31,13 @@ Creates a new Braintrust demo project from template.
 
 Arguments:
   project-name    Name of the new project (e.g., llm-evaluation)
-  type           Project type: python | typescript | fullstack
+  type           Project type: python | typescript | fullstack | custom
 
 Examples:
   $0 sentiment-eval python
   $0 chat-ui typescript
   $0 rag-system fullstack
+  $0 my-experiment custom
 
 EOF
     exit 1
@@ -52,9 +53,9 @@ PROJECT_NAME="$1"
 PROJECT_TYPE="$2"
 
 # Validate project type
-if [[ ! "$PROJECT_TYPE" =~ ^(python|typescript|fullstack)$ ]]; then
+if [[ ! "$PROJECT_TYPE" =~ ^(python|typescript|fullstack|custom)$ ]]; then
     print_error "Invalid project type: $PROJECT_TYPE"
-    echo "Must be one of: python, typescript, fullstack"
+    echo "Must be one of: python, typescript, fullstack, custom"
     exit 1
 fi
 
@@ -655,10 +656,142 @@ JSEOF
         print_status "Backend: Python/FastAPI, Frontend: Next.js/TypeScript"
         print_status "Use 'make help' to see available commands"
         ;;
+
+    custom)
+        print_status "Setting up custom project (blank canvas)..."
+
+        # Create minimal structure - only docs directory
+        mkdir -p docs
+
+        # Copy docs templates from _template
+        if [ -d "$TEMPLATE_DIR/docs" ]; then
+            cp -r "$TEMPLATE_DIR/docs"/* docs/
+            print_status "Created docs/ directory with templates"
+        fi
+
+        # Create minimal README
+        cat > README.md << 'EOF'
+# [Project Name]
+
+[Brief description of what this project does]
+
+## Overview
+
+This is a custom Braintrust project with a blank canvas structure.
+
+## Setup
+
+[Document your setup steps here]
+
+## Running
+
+[Document how to run your project here]
+
+## Documentation
+
+See the `docs/` directory for:
+- **[planning.md](./docs/planning.md)**: Project goals, scope, and implementation plan
+- **[implementation.md](./docs/implementation.md)**: Technical decisions and progress
+- **[issues.md](./docs/issues.md)**: Known issues and resolutions
+- **[changelog.md](./docs/changelog.md)**: Version history
+
+## Learn More
+
+- **Braintrust Docs**: https://www.braintrust.dev/docs
+- **Braintrust Cookbook**: https://github.com/braintrustdata/braintrust-cookbook
+EOF
+
+        # Create minimal CLAUDE.md
+        cat > CLAUDE.md << 'EOF'
+# [Project Name] - Claude Code Guide
+
+## Project Overview
+
+[Describe what this project demonstrates about Braintrust]
+
+**Type**: Custom
+**Focus**: [e.g., LLM Evaluation, Prompt Engineering, A/B Testing, etc.]
+
+## Project Structure
+
+This is a custom project with minimal scaffolding. The structure is up to you to define.
+
+```
+[project-name]/
+├── CLAUDE.md           # This file
+├── README.md           # Public documentation
+└── docs/               # Development documentation
+    ├── planning.md         # Project goals and strategy
+    ├── implementation.md   # Technical decisions and notes
+    ├── issues.md           # Bugs and known issues
+    └── changelog.md        # Version history
+```
+
+## Development Workflow
+
+When working on this project:
+
+1. **Read documentation first**:
+   - This file (CLAUDE.md) for project overview
+   - `docs/planning.md` for goals and strategy
+   - `docs/issues.md` for known problems
+   - `docs/implementation.md` for technical context
+
+2. **Reference Braintrust resources**:
+   - Official docs: https://www.braintrust.dev/docs
+   - Cookbook: https://github.com/braintrustdata/braintrust-cookbook
+
+3. **During development**:
+   - Document decisions: Update `docs/implementation.md` with technical choices
+   - Track issues: Log bugs in `docs/issues.md`
+
+4. **After changes**:
+   - Update `docs/changelog.md` with notable changes
+   - Update README if user-facing features changed
+   - Move resolved issues in `docs/issues.md`
+
+## Notes for Claude Code
+
+- This is a custom project with user-defined structure
+- Follow the user's instructions for setup and implementation
+- Reference Braintrust docs (https://www.braintrust.dev/docs) as needed
+- Keep the `docs/` directory updated with decisions and progress
+
+### Using Project Documentation
+
+The `docs/` folder contains critical context:
+- **Before coding**: Read `planning.md` and `issues.md`
+- **During coding**: Update `implementation.md` with decisions
+- **After coding**: Update `changelog.md` and resolve issues in `issues.md`
+
+This documentation is in version control and helps maintain context across sessions.
+EOF
+
+        # Update placeholders in copied files
+        sed -i.bak "s/\[Project Name\]/${PROJECT_NAME//[-_]/ }/g" README.md && rm README.md.bak
+        sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" README.md && rm README.md.bak
+
+        sed -i.bak "s/\[Project Name\]/${PROJECT_NAME//[-_]/ }/g" CLAUDE.md && rm CLAUDE.md.bak
+        sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" CLAUDE.md && rm CLAUDE.md.bak
+
+        # Update docs files with project name
+        if [ -d "docs" ]; then
+            for doc_file in docs/*.md; do
+                if [ -f "$doc_file" ]; then
+                    sed -i.bak "s/\[Project Name\]/${PROJECT_NAME//[-_]/ }/g" "$doc_file" && rm "${doc_file}.bak"
+                    sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" "$doc_file" && rm "${doc_file}.bak"
+                fi
+            done
+        fi
+
+        print_status "Custom project created successfully!"
+        print_status "This is a blank canvas - implement your own structure"
+        ;;
 esac
 
-# Create .env.example
-cat > .env.example << 'EOF'
+# Create .env.example (skip for custom projects)
+if [ "$PROJECT_TYPE" != "custom" ]; then
+    cat > .env.example << 'EOF'
 # Braintrust API Key
 # Get your key from: https://www.braintrust.dev/
 BRAINTRUST_API_KEY=your-braintrust-api-key-here
@@ -667,15 +800,20 @@ BRAINTRUST_API_KEY=your-braintrust-api-key-here
 OPENAI_API_KEY=your-openai-api-key-here
 ANTHROPIC_API_KEY=your-anthropic-api-key-here
 EOF
+fi
 
-# Update README with project name
-sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" README.md && rm README.md.bak
+# Update README with project name (skip for custom - already done in case)
+if [ "$PROJECT_TYPE" != "custom" ]; then
+    sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" README.md && rm README.md.bak
+fi
 
-# Update CLAUDE.md with project name
-sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" CLAUDE.md && rm CLAUDE.md.bak
+# Update CLAUDE.md with project name (skip for custom - already done in case)
+if [ "$PROJECT_TYPE" != "custom" ]; then
+    sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" CLAUDE.md && rm CLAUDE.md.bak
+fi
 
-# Update docs files with project name
-if [ -d "docs" ]; then
+# Update docs files with project name (skip for custom - already done in case)
+if [ "$PROJECT_TYPE" != "custom" ] && [ -d "docs" ]; then
     for doc_file in docs/*.md; do
         if [ -f "$doc_file" ]; then
             sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" "$doc_file" && rm "${doc_file}.bak"
@@ -716,8 +854,16 @@ else
         echo "  npm install           # Install Node dependencies"
         echo "  cp .env.example .env  # Configure environment"
         echo "  npm run dev"
+    elif [ "$PROJECT_TYPE" = "custom" ]; then
+        echo "  # This is a blank canvas - set up your own structure"
+        echo "  # Start by reviewing docs/planning.md"
+        echo "  # Then implement your project as needed"
     fi
 fi
 
 echo ""
-print_status "Don't forget to add your Braintrust API key to .env!"
+if [ "$PROJECT_TYPE" = "custom" ]; then
+    print_status "Custom project created! Review docs/planning.md to get started."
+else
+    print_status "Don't forget to add your Braintrust API key to .env!"
+fi

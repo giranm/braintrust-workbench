@@ -26,7 +26,8 @@ questions: [
     options: [
       { label: "Python", description: "Python project with UV" },
       { label: "TypeScript", description: "TypeScript/Node project" },
-      { label: "Fullstack", description: "Python backend + TypeScript frontend" }
+      { label: "Fullstack", description: "Python backend + Next.js frontend with Docker" },
+      { label: "Custom", description: "Blank canvas with only docs/ structure" }
     ]
   },
   {
@@ -135,6 +136,24 @@ Create:
   - Copy `.dockerignore` from template
   - Copy `nginx.conf` for frontend static serving (if using React/Vue)
 - Generate backend and frontend boilerplate in respective directories
+
+#### For Custom:
+
+Create minimal structure:
+- `docs/` directory (copy from template)
+  - `planning.md` - For project goals and strategy
+  - `implementation.md` - For technical decisions
+  - `issues.md` - For tracking bugs and issues
+  - `changelog.md` - For version history
+- `README.md` with basic project information
+- `CLAUDE.md` with minimal guidance
+- **Do NOT create**:
+  - `.mise.toml` (user provides their own tooling)
+  - `pyproject.toml` or `package.json`
+  - Docker files (Dockerfile, docker-compose.yml, Makefile)
+  - `.env.example`
+  - Source directories (src/, tests/)
+- This is a blank canvas for users to implement their own structure
 
 ### 6. Initialize Environment
 
