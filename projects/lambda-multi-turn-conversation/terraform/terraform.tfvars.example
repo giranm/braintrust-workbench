@@ -1,0 +1,34 @@
+# Terraform variables example
+# Copy this file to terraform.tfvars and fill in your values
+# Note: terraform.tfvars is gitignored for security
+
+# Environment configuration
+environment  = "dev"
+aws_region   = "us-east-1"
+project_name = "braintrust-multi-turn-conversation"
+owner        = "admin@example.com"
+
+# Lambda configuration
+# Note: Actual deployed name will be: {environment}-{function_name}
+# Example: dev-braintrust-multi-turn-conversation-lambda
+function_name      = "braintrust-multi-turn-conversation-lambda"
+lambda_memory_size = 512
+lambda_timeout     = 30
+
+# Braintrust configuration (REQUIRED)
+# Get these from https://www.braintrust.dev
+braintrust_api_key    = "your_api_key_here"
+braintrust_project_id = "your_project_id_here"
+
+# OpenAI configuration (REQUIRED)
+# Get API key from https://platform.openai.com/api-keys
+openai_api_key = "sk-your-openai-api-key-here"
+
+# Logging
+log_retention_days = 7
+
+# Additional tags (optional)
+common_tags = {
+  CostCenter = "engineering"
+  Team       = "support"
+}

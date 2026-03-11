@@ -1,0 +1,14 @@
+# Environment files (secrets)
+.env
+
+# Terraform state and cache
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/lambda_placeholder.zip
+terraform/placeholder/
+terraform/terraform.tfvars
+
+# Lambda deployment package
+lambda/function.zip
