@@ -2,8 +2,8 @@
 # This is mainly for reference - each project should define its own .mise.toml for isolation
 
 # Uncomment to set global defaults (optional)
-# [tools]
-# python = "3.12"
+[tools]
+python = "3.12"
 # node = "20"
 # "npm:uv" = "latest"
 
