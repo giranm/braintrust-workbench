@@ -73,7 +73,7 @@ This directory contains development documentation for the project.
 
 ## Documentation Workflow
 
-### For Claude Code
+### For Coding Agents
 
 When working on this project:
 

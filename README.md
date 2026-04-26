@@ -45,9 +45,13 @@ cd braintrust-workbench
 
 ### 2. Create a New Project
 
-**Recommended** - Using Claude Code's interactive skill:
+**Recommended** - Use your coding agent with the shared project-creation flow:
 ```bash
+# Claude users:
 /new-project
+
+# Codex users:
+# ask the agent to create a new project
 ```
 
 **Alternative** - Using the bootstrap script:
@@ -72,7 +76,7 @@ uv sync
 source .venv/bin/activate  # Activate virtual environment
 
 # For TypeScript projects
-npm install
+pnpm install
 ```
 
 ### 4. Configure Braintrust
@@ -92,7 +96,7 @@ echo "BRAINTRUST_API_KEY=your-key-here" >> .env
 uv run python src/main.py
 
 # TypeScript
-npm run dev
+pnpm dev
 ```
 
 ## Projects
@@ -103,8 +107,8 @@ See [projects/README.md](projects/README.md) for a complete index of available d
 
 Each project is isolated with its own:
 - **Tool versions** (via `.mise.toml`)
-- **Dependencies** (via `uv` or `npm`)
-- **Documentation** (README.md and CLAUDE.md)
+- **Dependencies** (via `uv` or `pnpm`)
+- **Agent guidance** (`AGENTS.md`, plus compatibility shims where needed)
 - **Configuration** (environment variables, settings)
 
 ### Project Types
@@ -140,11 +144,11 @@ mise current
 
 # Run code
 uv run python src/main.py  # Python
-npm run dev                # TypeScript
+pnpm dev                   # TypeScript
 
 # Run tests
 uv run pytest              # Python
-npm test                   # TypeScript
+pnpm test                  # TypeScript
 ```
 
 ### Adding Dependencies
@@ -154,7 +158,7 @@ npm test                   # TypeScript
 uv add braintrust openai anthropic
 
 # TypeScript
-npm install --save braintrust
+pnpm add braintrust
 ```
 
 ### Running Evaluations
