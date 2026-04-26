@@ -219,12 +219,3 @@ Keep these files current. They are part of the agent contract, not optional note
   clearly in the project README and docs.
 - Include example outputs and eval results in READMEs when they materially
   improve the educational value of the demo.
-
-
-<claude-mem-context>
-# Memory Context
-
-# [braintrust-workbench] recent context, 2026-04-26 8:31pm GMT+1
-
-No previous sessions found.
-</claude-mem-context>
