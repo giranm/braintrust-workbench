@@ -207,6 +207,7 @@ EOF
 # mise configuration for $PROJECT_NAME
 [tools]
 node = "20"
+pnpm = "9"
 
 [env]
 _.file = ".env"
@@ -290,6 +291,7 @@ EOF
 [tools]
 python = "3.12"
 node = "20"
+pnpm = "9"
 "npm:uv" = "latest"
 
 [env]
@@ -701,24 +703,40 @@ See the `docs/` directory for:
 - **Braintrust Cookbook**: https://github.com/braintrustdata/braintrust-cookbook
 EOF
 
-        # Create minimal CLAUDE.md
-        cat > CLAUDE.md << 'EOF'
-# [Project Name] - Claude Code Guide
+        # Create minimal AGENTS.md
+        cat > AGENTS.md << 'EOF'
+# AGENTS.md
 
-## Project Overview
+This file is the source of truth for project-level agent guidance.
+
+## Project overview
 
 [Describe what this project demonstrates about Braintrust]
 
 **Type**: Custom
 **Focus**: [e.g., LLM Evaluation, Prompt Engineering, A/B Testing, etc.]
 
-## Project Structure
+## Working context
 
-This is a custom project with minimal scaffolding. The structure is up to you to define.
+This is a custom Braintrust project with minimal scaffolding. Keep it isolated,
+runnable, and easy to understand as a standalone demo.
+
+## Read order
+
+Before non-trivial work:
+
+1. This file
+2. `README.md`
+3. `docs/planning.md`
+4. `docs/issues.md`
+5. `docs/implementation.md`
+
+## Project structure
 
 ```
 [project-name]/
-├── CLAUDE.md           # This file
+├── AGENTS.md           # Source of truth for agent guidance
+├── CLAUDE.md           # Compatibility shim, if present
 ├── README.md           # Public documentation
 └── docs/               # Development documentation
     ├── planning.md         # Project goals and strategy
@@ -727,49 +745,34 @@ This is a custom project with minimal scaffolding. The structure is up to you to
     └── changelog.md        # Version history
 ```
 
-## Development Workflow
+## Working model
 
-When working on this project:
+- Keep the project lean and docs-first until the user defines more structure.
+- Reference Braintrust docs: https://www.braintrust.dev/docs
+- Reference the cookbook: https://github.com/braintrustdata/braintrust-cookbook
+- Keep `docs/` updated with decisions, issues, and changes.
+EOF
 
-1. **Read documentation first**:
-   - This file (CLAUDE.md) for project overview
-   - `docs/planning.md` for goals and strategy
-   - `docs/issues.md` for known problems
-   - `docs/implementation.md` for technical context
+        # Create minimal CLAUDE.md compatibility shim
+        cat > CLAUDE.md << 'EOF'
+# Claude Compatibility Note
 
-2. **Reference Braintrust resources**:
-   - Official docs: https://www.braintrust.dev/docs
-   - Cookbook: https://github.com/braintrustdata/braintrust-cookbook
+`AGENTS.md` is the source of truth for project guidance in this project.
 
-3. **During development**:
-   - Document decisions: Update `docs/implementation.md` with technical choices
-   - Track issues: Log bugs in `docs/issues.md`
+When working here with Claude:
 
-4. **After changes**:
-   - Update `docs/changelog.md` with notable changes
-   - Update README if user-facing features changed
-   - Move resolved issues in `docs/issues.md`
+1. Read `AGENTS.md` first.
+2. Then follow `README.md` and `docs/` as directed there.
 
-## Notes for Claude Code
-
-- This is a custom project with user-defined structure
-- Follow the user's instructions for setup and implementation
-- Reference Braintrust docs (https://www.braintrust.dev/docs) as needed
-- Keep the `docs/` directory updated with decisions and progress
-
-### Using Project Documentation
-
-The `docs/` folder contains critical context:
-- **Before coding**: Read `planning.md` and `issues.md`
-- **During coding**: Update `implementation.md` with decisions
-- **After coding**: Update `changelog.md` and resolve issues in `issues.md`
-
-This documentation is in version control and helps maintain context across sessions.
+If this file and `AGENTS.md` ever disagree, follow `AGENTS.md`.
 EOF
 
         # Update placeholders in copied files
         sed -i.bak "s/\[Project Name\]/${PROJECT_NAME//[-_]/ }/g" README.md && rm README.md.bak
         sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" README.md && rm README.md.bak
+
+        sed -i.bak "s/\[Project Name\]/${PROJECT_NAME//[-_]/ }/g" AGENTS.md && rm AGENTS.md.bak
+        sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" AGENTS.md && rm AGENTS.md.bak
 
         sed -i.bak "s/\[Project Name\]/${PROJECT_NAME//[-_]/ }/g" CLAUDE.md && rm CLAUDE.md.bak
         sed -i.bak "s/\[project-name\]/$PROJECT_NAME/g" CLAUDE.md && rm CLAUDE.md.bak
@@ -807,6 +810,11 @@ if [ "$PROJECT_TYPE" != "custom" ]; then
     sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" README.md && rm README.md.bak
 fi
 
+# Update AGENTS.md with project name (skip for custom - already done in case)
+if [ "$PROJECT_TYPE" != "custom" ]; then
+    sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" AGENTS.md && rm AGENTS.md.bak
+fi
+
 # Update CLAUDE.md with project name (skip for custom - already done in case)
 if [ "$PROJECT_TYPE" != "custom" ]; then
     sed -i.bak "s/\[Project Name\]/$PROJECT_NAME/g" CLAUDE.md && rm CLAUDE.md.bak
@@ -841,7 +849,7 @@ if [ "$PROJECT_TYPE" = "fullstack" ]; then
     echo "  mise install          # Install project tools"
     echo "  mise trust            # Trust the .mise.toml config"
     echo "  cd backend && uv sync # Install backend dependencies"
-    echo "  cd frontend && npm install # Install frontend dependencies"
+    echo "  cd frontend && pnpm install # Install frontend dependencies"
 else
     echo "  mise install          # Install project tools"
     echo "  mise trust            # Trust the .mise.toml config"
@@ -851,9 +859,9 @@ else
         echo "  cp .env.example .env  # Configure environment"
         echo "  uv run python src/main.py"
     elif [ "$PROJECT_TYPE" = "typescript" ]; then
-        echo "  npm install           # Install Node dependencies"
+        echo "  pnpm install          # Install Node dependencies"
         echo "  cp .env.example .env  # Configure environment"
-        echo "  npm run dev"
+        echo "  pnpm dev"
     elif [ "$PROJECT_TYPE" = "custom" ]; then
         echo "  # This is a blank canvas - set up your own structure"
         echo "  # Start by reviewing docs/planning.md"

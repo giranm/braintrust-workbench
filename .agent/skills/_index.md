@@ -38,3 +38,12 @@ Constraints: prefer DESIGN.md tokens over invented values, do not modify
 DESIGN.md unless the user explicitly asks, preserve unknown sections when
 an edit IS authorised, validate with `npx @google/design.md lint DESIGN.md`
 when available.
+
+## new-project
+Creates a new Braintrust demo project in `projects/` using the shared
+bootstrap script plus Codex-side input gathering and documentation cleanup.
+Triggers: "new project", "create new project", "bootstrap project",
+"/new-project"
+Preconditions: `projects/_template` and `scripts/new-project.sh` exist.
+Constraints: validate the project name before scaffolding, keep projects
+isolated, and ask before dependency installation.

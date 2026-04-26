@@ -20,6 +20,8 @@ When invoked, this skill will:
 2. **Create project structure** from template:
    - Copy template files to `projects/<project-name>/`
    - Copy `docs/` directory with planning and tracking templates
+   - Create `AGENTS.md` as the project-level source of truth
+   - Keep `CLAUDE.md` only as a compatibility shim
    - Replace all placeholders with user-provided values
    - Generate appropriate project files based on type
 
@@ -34,7 +36,7 @@ When invoked, this skill will:
 4. **Initialize the project**:
    - Run `mise install` to install tools
    - For Python: Run `uv sync` to install dependencies
-   - For TypeScript: Run `npm install`
+   - For TypeScript: Run `pnpm install`
 
 5. **Provide next steps** for the user
 
@@ -53,7 +55,7 @@ The skill will ask:
 1. **Project name**: What should the project be called? (e.g., "sentiment-eval", "chat-ui")
 2. **Project type**: Python, TypeScript, Fullstack, or Custom?
    - **Python**: Python project with UV package management
-   - **TypeScript**: TypeScript/Node project with npm
+   - **TypeScript**: TypeScript/Node project with pnpm
    - **Fullstack**: Python backend + Next.js frontend with Docker
    - **Custom**: Blank canvas with only docs/ structure (no scaffolding)
 3. **Description**: Brief one-line description of the project

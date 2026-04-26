@@ -72,6 +72,7 @@ os.makedirs(project_path, exist_ok=False)
 copy_file("projects/_template/.mise.toml", f"{project_path}/.mise.toml")
 copy_file("projects/_template/.env.example", f"{project_path}/.env.example")
 copy_file("projects/_template/README.md", f"{project_path}/README.md")
+copy_file("projects/_template/AGENTS.md", f"{project_path}/AGENTS.md")
 copy_file("projects/_template/CLAUDE.md", f"{project_path}/CLAUDE.md")
 
 # Copy docs directory
@@ -96,7 +97,7 @@ replacements = {
 }
 
 # Apply to all files including:
-# - README.md, CLAUDE.md
+# - README.md, AGENTS.md, CLAUDE.md
 # - docs/planning.md, docs/implementation.md, docs/issues.md, docs/changelog.md
 
 # For features, ask for 2-3 key patterns
@@ -146,7 +147,8 @@ Create minimal structure:
   - `issues.md` - For tracking bugs and issues
   - `changelog.md` - For version history
 - `README.md` with basic project information
-- `CLAUDE.md` with minimal guidance
+- `AGENTS.md` with tool-agnostic guidance
+- `CLAUDE.md` as a compatibility shim
 - **Do NOT create**:
   - `.mise.toml` (user provides their own tooling)
   - `pyproject.toml` or `package.json`
@@ -168,7 +170,7 @@ mise trust
 uv sync
 
 # For TypeScript
-npm install
+pnpm install
 ```
 
 #### Docker Setup (for Fullstack)
@@ -241,6 +243,6 @@ Your project is ready to use!
 1. Use `Glob` to check for existing projects
 2. Use `Read` to get template contents
 3. Use `Write` or `Edit` to create/modify files
-4. Use `Bash` for mise/uv/npm commands
+4. Use `Bash` for mise/uv/pnpm commands
 5. Keep user informed with progress updates
 6. Handle errors gracefully with clear messages
