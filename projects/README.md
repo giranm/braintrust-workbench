@@ -20,7 +20,7 @@ See [project README](./support-desk-investigator/README.md) for details.
 
 ### Template
 
-The `template/` directory contains boilerplate files for creating new projects. Use `scripts/new-project.sh` to bootstrap new projects from this template.
+The `_template/` directory contains boilerplate files for creating new projects. Use `scripts/new-project.sh` to bootstrap new projects from this template.
 
 ## Project Structure
 

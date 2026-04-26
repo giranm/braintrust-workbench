@@ -11,7 +11,7 @@ This repository contains isolated demo projects that demonstrate various Braintr
 ```
 braintrust-workbench/
 ├── projects/          # Individual demo projects
-│   ├── template/      # Template for new projects
+│   ├── _template/     # Template for new projects
 │   │   ├── docs/      # Documentation templates
 │   │   └── ...
 │   └── [demos]/       # Your showcase projects
@@ -59,7 +59,7 @@ cd braintrust-workbench
 ./scripts/new-project.sh my-eval-demo python
 
 # Or manually copy the template
-cp -r projects/template projects/my-eval-demo
+cp -r projects/_template projects/my-eval-demo
 cd projects/my-eval-demo
 ```
 
