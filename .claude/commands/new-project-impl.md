@@ -71,6 +71,7 @@ os.makedirs(project_path, exist_ok=False)
 copy_file("projects/template/.mise.toml", f"{project_path}/.mise.toml")
 copy_file("projects/template/.env.example", f"{project_path}/.env.example")
 copy_file("projects/template/README.md", f"{project_path}/README.md")
+copy_file("projects/template/AGENTS.md", f"{project_path}/AGENTS.md")
 copy_file("projects/template/CLAUDE.md", f"{project_path}/CLAUDE.md")
 
 # Copy docs directory
@@ -95,7 +96,7 @@ replacements = {
 }
 
 # Apply to all files including:
-# - README.md, CLAUDE.md
+# - README.md, AGENTS.md, CLAUDE.md
 # - docs/planning.md, docs/implementation.md, docs/issues.md, docs/changelog.md
 
 # For features, ask for 2-3 key patterns
@@ -125,7 +126,33 @@ Create:
 Create:
 - `.mise.toml` (Python + Node)
 - `backend/` and `frontend/` directories
-- Leave instructions for manual setup
+- **Docker setup (Required for fullstack)**:
+  - Copy `Dockerfile.backend` from template
+  - Copy `Dockerfile.frontend` from template
+  - Copy `docker-compose.yml` from template and replace `[project-name]` placeholders
+  - Copy `Makefile` from template and replace `[Project Name]` and `[project-name]` placeholders
+  - Copy `.dockerignore` from template
+  - Copy `nginx.conf` for frontend static serving (if using React/Vue)
+- Generate backend and frontend boilerplate in respective directories
+
+#### For Custom:
+
+Create minimal structure:
+- `docs/` directory (copy from template)
+  - `planning.md` - For project goals and strategy
+  - `implementation.md` - For technical decisions
+  - `issues.md` - For tracking bugs and issues
+  - `changelog.md` - For version history
+- `README.md` with basic project information
+- `AGENTS.md` with tool-agnostic guidance
+- `CLAUDE.md` as a compatibility shim
+- **Do NOT create**:
+  - `.mise.toml` (user provides their own tooling)
+  - `pyproject.toml` or `package.json`
+  - Docker files (Dockerfile, docker-compose.yml, Makefile)
+  - `.env.example`
+  - Source directories (src/, tests/)
+- This is a blank canvas for users to implement their own structure
 
 ### 6. Initialize Environment
 
@@ -138,7 +165,7 @@ mise trust
 uv sync
 
 # For TypeScript
-npm install
+pnpm install
 ```
 
 ### 7. Update Projects Index
@@ -190,6 +217,6 @@ Your project is ready to use!
 1. Use `Glob` to check for existing projects
 2. Use `Read` to get template contents
 3. Use `Write` or `Edit` to create/modify files
-4. Use `Bash` for mise/uv/npm commands
+4. Use `Bash` for mise/uv/pnpm commands
 5. Keep user informed with progress updates
 6. Handle errors gracefully with clear messages
