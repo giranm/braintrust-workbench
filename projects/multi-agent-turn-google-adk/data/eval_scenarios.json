@@ -1,0 +1,115 @@
+[
+  {
+    "input": {
+      "turns": [
+        {"user_message": "Where is my order #12345?"}
+      ],
+      "expected_agent": "order_agent",
+      "expected_tools": ["lookup_order"]
+    },
+    "expected": {
+      "agent": "order_agent",
+      "tools": ["lookup_order"],
+      "must_contain": ["in_transit", "12345"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "I want to cancel order #11111"}
+      ],
+      "expected_agent": "order_agent",
+      "expected_tools": ["cancel_order"]
+    },
+    "expected": {
+      "agent": "order_agent",
+      "tools": ["cancel_order"],
+      "must_contain": ["cancel", "11111"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "Can I get a refund for order #67890? The full amount please."}
+      ],
+      "expected_agent": "billing_agent",
+      "expected_tools": ["process_refund"]
+    },
+    "expected": {
+      "agent": "billing_agent",
+      "tools": ["process_refund"],
+      "must_contain": ["refund", "149.99"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "Can you send me the invoice for order #12345?"}
+      ],
+      "expected_agent": "billing_agent",
+      "expected_tools": ["get_invoice"]
+    },
+    "expected": {
+      "agent": "billing_agent",
+      "tools": ["get_invoice"],
+      "must_contain": ["invoice"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "What is your return policy?"}
+      ],
+      "expected_agent": "faq_agent",
+      "expected_tools": ["search_faq"]
+    },
+    "expected": {
+      "agent": "faq_agent",
+      "tools": ["search_faq"],
+      "must_contain": ["return", "30 days"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "How long does shipping take?"}
+      ],
+      "expected_agent": "faq_agent",
+      "expected_tools": ["search_faq"]
+    },
+    "expected": {
+      "agent": "faq_agent",
+      "tools": ["search_faq"],
+      "must_contain": ["shipping", "business days"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "Where is my order #12345?"},
+        {"user_message": "I'd like a refund for it actually."}
+      ],
+      "expected_agent": "billing_agent",
+      "expected_tools": ["process_refund"]
+    },
+    "expected": {
+      "agent": "billing_agent",
+      "tools": ["process_refund"],
+      "must_contain": ["refund"]
+    }
+  },
+  {
+    "input": {
+      "turns": [
+        {"user_message": "I need help with order #99999"}
+      ],
+      "expected_agent": "order_agent",
+      "expected_tools": ["lookup_order"]
+    },
+    "expected": {
+      "agent": "order_agent",
+      "tools": ["lookup_order"],
+      "must_contain": ["not found"]
+    }
+  }
+]
