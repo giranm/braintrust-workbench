@@ -225,6 +225,22 @@ dist/
 
 # Braintrust (if any local state/cache files)
 .braintrust/
+.bt/
+
+# Cursor editor
+.cursor/
+
+# Agent configurations (tool-generated)
+.agents/
+
+# Agentic-stack (machine-specific and ephemeral)
+.agent/install.json
+.agent/install.json.lock
+.agent/memory/episodic/
+.agent/harness/hooks/__pycache__/
+
+# MCP (Model Context Protocol) config
+.mcp.json
 
 # Environment files (keep .env.example)
 .env
