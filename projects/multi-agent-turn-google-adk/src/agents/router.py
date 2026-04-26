@@ -10,24 +10,14 @@ from src.agents.billing_agent import billing_agent
 from src.agents.config import get_model
 from src.agents.faq_agent import faq_agent
 from src.agents.order_agent import order_agent
+from src.prompts import AGENT_PROMPTS
+
+_prompt = AGENT_PROMPTS["router_agent"]
 
 router_agent = Agent(
     name="router_agent",
     model=get_model(),
-    description="Top-level router that classifies customer intent and delegates.",
-    instruction=(
-        "You are the Router for a customer support system.\n\n"
-        "Your ONLY job is to understand what the customer needs and transfer "
-        "them to the right specialist agent. NEVER answer questions yourself.\n\n"
-        "Available specialists:\n"
-        "- order_agent: order status, tracking, cancellations, modifications\n"
-        "- billing_agent: refunds, invoices, payment issues, charges\n"
-        "- faq_agent: general questions about policies, shipping, returns\n\n"
-        "Rules:\n"
-        "- Immediately transfer to the appropriate agent\n"
-        "- If the intent is ambiguous, ask ONE clarifying question, then transfer\n"
-        "- If a conversation topic shifts, you will receive control back and "
-        "should transfer to the new appropriate agent\n"
-    ),
+    description=_prompt["description"],
+    instruction=_prompt["instruction"],
     sub_agents=[order_agent, billing_agent, faq_agent],
 )

@@ -1,6 +1,14 @@
 """Tests for Braintrust scorer implementations."""
 
-from src.scorers import routing_accuracy, task_completion, tool_selection
+import json
+
+from src.scorers import (
+    response_format,
+    routing_accuracy,
+    task_completion,
+    tool_call_accuracy,
+    tool_selection,
+)
 
 
 class TestRoutingAccuracy:
@@ -76,3 +84,51 @@ class TestTaskCompletion:
             expected={},
         )
         assert score.score == 1.0
+
+
+class TestToolCallAccuracy:
+    def test_exact_match(self):
+        score = tool_call_accuracy(
+            output="response",
+            expected=json.dumps(["lookup_order"]),
+            metadata=json.dumps({"tools_called": ["lookup_order"]}),
+        )
+        assert score.score == 1.0
+
+    def test_no_match(self):
+        score = tool_call_accuracy(
+            output="response",
+            expected=json.dumps(["lookup_order"]),
+            metadata=json.dumps({"tools_called": ["search_faq"]}),
+        )
+        assert score.score == 0.0
+
+    def test_partial(self):
+        score = tool_call_accuracy(
+            output="response",
+            expected=json.dumps(["lookup_order", "cancel_order"]),
+            metadata=json.dumps({"tools_called": ["lookup_order"]}),
+        )
+        assert score.score == 0.5
+
+    def test_both_empty(self):
+        score = tool_call_accuracy(output="response", expected="", metadata="")
+        assert score.score == 1.0
+
+
+class TestResponseFormat:
+    def test_good_response(self):
+        score = response_format("Your order #12345 is in transit and expected to arrive April 30.")
+        assert score.score == 1.0
+
+    def test_empty_response(self):
+        score = response_format("")
+        assert score.score == 0.0
+
+    def test_too_short(self):
+        score = response_format("OK")
+        assert score.score == 0.2
+
+    def test_error_artifacts(self):
+        score = response_format("Traceback (most recent call last): something went wrong")
+        assert score.score == 0.3

@@ -5,7 +5,7 @@ description = "Multi-agent turn-based orchestration using Google ADK with Braint
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "braintrust>=0.0.1",
+    "braintrust[cli]>=0.0.1",
     "google-adk>=0.2.0",
     "litellm>=1.40.0",
     "python-dotenv>=1.0.0",

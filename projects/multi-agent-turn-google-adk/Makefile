@@ -1,4 +1,4 @@
-.PHONY: help install setup setup-automations run cli eval test lint clean
+.PHONY: help install setup setup-managed setup-automations run cli eval test lint clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -13,6 +13,10 @@ setup: ## Create .env from template (if not exists)
 	@test -f .env || (cp .env.example .env && echo "Created .env — edit it with your API keys")
 	@test -f .env && echo ".env already exists"
 
+setup-managed: ## Push datasets, prompts, and tools to Braintrust as managed objects
+	set -a && . ./.env && uvx --python 3.12 --from 'braintrust[cli]' --with pydantic braintrust push src/push_functions.py
+	uv run python src/setup_managed.py
+
 setup-automations: ## Provision Braintrust online scoring automations
 	uv run python src/automations.py
 
@@ -26,7 +30,7 @@ cli-verbose: ## Start the CLI with verbose output (shows routing and tool calls)
 	uv run python src/cli.py --verbose
 
 eval: ## Run the offline Braintrust evaluation suite
-	uv run braintrust eval src/eval.py
+	set -a && . ./.env && uv run braintrust eval src/eval.py
 
 test: ## Run pytest
 	uv run pytest

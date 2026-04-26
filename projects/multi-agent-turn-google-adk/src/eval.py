@@ -1,10 +1,12 @@
 """Offline evaluation suite using Braintrust Eval().
 
+Uses the managed dataset in Braintrust if BRAINTRUST_API_KEY is set,
+otherwise falls back to the local JSON seed file.
+
 Run with:
     uv run braintrust eval src/eval.py
 """
 
-import asyncio
 import json
 import os
 import pathlib
@@ -15,10 +17,20 @@ from src.orchestrator import BRAINTRUST_PROJECT, create_session, send_message
 from src.scorers import routing_accuracy, task_completion, tool_selection
 
 DATA_PATH = pathlib.Path(__file__).parent.parent / "data" / "eval_scenarios.json"
+DATASET_NAME = "eval-scenarios"
 
 
-def load_eval_data() -> list[dict]:
-    """Load multi-turn evaluation scenarios from JSON."""
+def load_eval_data():
+    """Load evaluation data from managed Braintrust dataset or local JSON fallback."""
+    if os.environ.get("BRAINTRUST_API_KEY"):
+        try:
+            return braintrust.init_dataset(
+                project=BRAINTRUST_PROJECT,
+                name=DATASET_NAME,
+            )
+        except Exception:
+            pass
+    # Fallback to local JSON
     with open(DATA_PATH) as f:
         return json.load(f)
 

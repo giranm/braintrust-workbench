@@ -27,6 +27,22 @@ This document tracks implementation decisions, technical notes, and progress dur
 - Tool spans now capture both arguments and response data
 - Root span logs full conversation as input/output
 
+### 2026-04-26 - Managed Objects
+- Extracted prompts to `src/prompts.py` (single source of truth)
+- Created `src/setup_managed.py` for idempotent Braintrust setup
+- Created `src/push_functions.py` for `braintrust push` (tool code upload)
+- Tools created via REST API, schemas added via PATCH, code uploaded via push
+- Prompts published via SDK, tool references added via REST API PATCH
+- Dataset `eval-scenarios` uploaded as managed golden dataset
+- `src/eval.py` uses managed dataset with local JSON fallback
+
+### 2026-04-27 - Scorers and Online Scoring
+- Added 4 managed scorers: 2 code-based (span) + 2 LLM-as-Judge (span/trace)
+- Code scorers uploaded via `braintrust push` with Pydantic input schemas
+- LLM scorers registered via `project.scorers.create(messages=[...])` — fixed `prompt=` bug
+- Configured 2 online scoring rules at 100% sampling via `PUT /v1/project_score`
+- Added 8 new scorer tests (31 total)
+
 ---
 
 ## Architecture Decisions
@@ -152,14 +168,31 @@ orchestration-level instrumentation captures the domain-specific context.
 
 ### Evaluations
 - **Framework**: `braintrust.Eval()` in `src/eval.py`
-- **Runner**: `uv run braintrust eval src/eval.py`
-- **Dataset**: `data/eval_scenarios.json` — 8 scenarios (single and multi-turn)
-- **Metrics**: routing accuracy, tool selection, task completion
+- **Runner**: `make eval` (sources `.env` before running `braintrust eval`)
+- **Dataset**: Managed dataset `eval-scenarios` in Braintrust (falls back to `data/eval_scenarios.json`)
+- **Eval scorers**: `routing_accuracy`, `tool_selection`, `task_completion`
+
+### Managed Objects (`make setup-managed`)
+All project assets are registered as Braintrust managed objects:
+- **Dataset**: `eval-scenarios` — 8 golden scenarios via `braintrust.init_dataset()`
+- **Prompts**: 4 agent prompts via `project.prompts.create()` + REST API PATCH for tool linking
+- **Tools**: 5 tool code functions via `braintrust push` (Python 3.12) + schema via REST API PATCH
+- **Scorers**: 2 code-based via `braintrust push`, 2 LLM-as-Judge via `project.scorers.create(messages=[...])`
+- **Online rules**: 2 rules via `PUT /v1/project_score` (span-level + trace-level, 100% sampling)
+
+**Registration order matters**: tools first (REST API), then prompts (SDK + REST PATCH for tool links), then scorers, then online rules (which reference scorer IDs).
 
 ### Custom Scorers
-- **Heuristic** (`src/scorers.py`): `routing_accuracy`, `tool_selection`, `task_completion`
-- **LLM-graded** (`src/scorers.py`): `response_relevance`, `conversation_coherence` — prompt-based, registered via `src/automations.py`
-- **Online scoring**: LLM scorers registered as managed objects via `project.scorers.create()`, then enabled in Braintrust dashboard
+- **Eval-only** (`src/scorers.py`): `routing_accuracy`, `tool_selection`, `task_completion` — used by `Eval()`, not managed objects
+- **Managed code scorers** (`src/push_functions.py`): `tool-call-accuracy` (span), `response-format` (span) — uploaded with Python source via `braintrust push`
+- **Managed LLM scorers** (`src/setup_managed.py`): `response-helpfulness` (span), `conversation-resolution` (trace) — GPT-4o-mini with CoT, registered with `messages=` format
+
+### Online Scoring Rules
+Two automation rules at 100% sampling:
+- **Agent Response Quality** (span-level): targets `turn:*` spans with `span_attributes.type = 'task'`, runs `response-format` + `response-helpfulness`
+- **Conversation Resolution** (trace-level): targets all traces, runs `conversation-resolution`
+
+Configured via `PUT /v1/project_score` with versioned scorer references (`{type: "function", id, version}`).
 
 ---
 
@@ -170,27 +203,30 @@ orchestration-level instrumentation captures the domain-specific context.
 multi-agent-turn-google-adk/
 ├── src/
 │   ├── agents/
-│   │   ├── config.py          - LiteLlm model config (env-driven)
+│   │   ├── config.py          - LiteLlm model config (imports from prompts.py)
 │   │   ├── router.py          - Router with sub_agents delegation
 │   │   ├── order_agent.py     - Order specialist + tools
 │   │   ├── billing_agent.py   - Billing specialist + tools
 │   │   └── faq_agent.py       - FAQ specialist + tools
 │   ├── tools/
 │   │   └── mock_tools.py      - 5 mocked tools with ID normalization
+│   ├── prompts.py             - Central prompt registry (AGENT_PROMPTS dict)
 │   ├── tracing.py             - LiteLLM callback for Braintrust LLM spans
 │   ├── orchestrator.py        - ADK Runner wrapper with span hierarchy
-│   ├── scorers.py             - Heuristic + LLM scorer definitions
-│   ├── eval.py                - Offline evaluation suite
-│   ├── automations.py         - Braintrust scorer provisioning
+│   ├── scorers.py             - Eval + managed scorer definitions
+│   ├── eval.py                - Offline evaluation suite (managed dataset)
+│   ├── setup_managed.py       - Push all managed objects + online rules
+│   ├── push_functions.py      - Self-contained for braintrust push (tools + code scorers)
+│   ├── automations.py         - Legacy scorer provisioning
 │   ├── cli.py                 - Interactive CLI client
 │   └── main.py                - Scripted demo scenario
 ├── tests/
 │   ├── test_main.py           - Smoke tests (imports, agent structure)
-│   ├── test_tools.py          - Mock tool behavior tests
-│   └── test_scorers.py        - Scorer logic tests
+│   ├── test_tools.py          - Mock tool behavior tests (22 tests)
+│   └── test_scorers.py        - Scorer logic tests (19 tests)
 ├── data/
-│   └── eval_scenarios.json    - 8 eval scenarios
-└── Makefile                   - install, setup, run, cli, eval, test, etc.
+│   └── eval_scenarios.json    - 8 eval scenarios (seed for managed dataset)
+└── Makefile                   - install, setup, setup-managed, run, cli, eval, test
 ```
 
 ---
@@ -224,7 +260,26 @@ tool-calling systems.
 ### `logger.flush()` Is Synchronous
 Braintrust's `logger.flush()` returns `None`, not a coroutine. Do not `await` it.
 
+### LLM Scorers Need `messages=`, Not `prompt=`
+`project.scorers.create(prompt="...")` registers fine but fails at runtime —
+the OpenAI API requires a `messages` array. Always use
+`messages=[{"role": "user", "content": prompt_text}]`.
+
+### Python SDK Double-Serializes Prompt Tools
+`project.prompts.create(tools=[...])` stores tools as a JSON string, not an
+array. Braintrust UI won't render the tool references. Workaround: publish
+prompts without tools, then PATCH via REST API with `json.dumps(tools)`.
+
+### Tool-Prompt Linking Uses OpenAI Function Format
+Braintrust links tools to prompts by matching `function.name` in the prompt's
+`tools` array to the tool's `slug`. Use standard OpenAI function-calling format:
+`{"type": "function", "function": {"name": "<tool-slug>", ...}}`.
+
+### `braintrust push` and `braintrust eval` Don't Load `.env`
+Both CLI commands require env vars in the shell. Makefile targets use
+`set -a && . ./.env &&` prefix to source credentials.
+
 ---
 
 **Maintained By**: Giran Moodley
-**Last Updated**: 2026-04-26
+**Last Updated**: 2026-04-27
