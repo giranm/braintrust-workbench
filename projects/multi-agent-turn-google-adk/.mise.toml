@@ -1,0 +1,7 @@
+# mise configuration for multi-agent-turn-google-adk
+[tools]
+python = "3.12"
+"npm:uv" = "latest"
+
+[env]
+_.file = ".env"

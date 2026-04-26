@@ -21,6 +21,22 @@ See [project README](./lambda-multi-turn-conversation/README.md) for details.
 
 ---
 
+### [Multi Agent Turn Google ADK](./multi-agent-turn-google-adk/)
+
+**Type**: Python
+**Focus**: Observability & Tracing, LLM Evaluation, Custom Scorers
+
+Multi-agent turn-based orchestration using Google ADK with Braintrust observability.
+
+Key features:
+- Custom scorers for multi-turn agent interactions
+- LLM evaluation of agent responses and orchestration quality
+- Observability and tracing of multi-agent turns and tool calls
+
+See [project README](./multi-agent-turn-google-adk/README.md) for details.
+
+---
+
 ### Template
 
 The `template/` directory contains boilerplate files for creating new projects. Use `scripts/new-project.sh` to bootstrap new projects from this template.

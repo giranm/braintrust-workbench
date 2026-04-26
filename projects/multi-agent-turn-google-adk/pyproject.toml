@@ -1,0 +1,31 @@
+[project]
+name = "multi-agent-turn-google-adk"
+version = "0.1.0"
+description = "Multi-agent turn-based orchestration using Google ADK with Braintrust observability"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "braintrust>=0.0.1",
+    "google-adk>=0.2.0",
+    "litellm>=1.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
