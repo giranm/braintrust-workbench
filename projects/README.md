@@ -29,12 +29,13 @@ Each project follows this structure:
 ```
 project-name/
 ├── .mise.toml          # Tool version configuration (Python, Node, etc.)
-├── CLAUDE.md           # Project-specific guidance for Claude Code
+├── AGENTS.md           # Project-specific guidance for coding agents
+├── CLAUDE.md           # Compatibility shim when present
 ├── README.md           # Project documentation
 ├── .env.example        # Environment variable template
 ├── pyproject.toml      # Python project (UV)
 │   OR
-├── package.json        # TypeScript project (npm)
+├── package.json        # TypeScript project (pnpm)
 ├── src/                # Source code
 └── tests/              # Tests and evaluations
 ```

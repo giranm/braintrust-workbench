@@ -189,7 +189,7 @@ Areas lacking sufficient test coverage:
 1. Add issue to "Open Issues" section above
 2. Assign priority and status
 3. Document reproduction steps and impact
-4. Update CLAUDE.md if needed for context
+4. Update AGENTS.md or related docs if project guidance changed
 
 ### For Resolved Issues
 
@@ -198,7 +198,7 @@ Areas lacking sufficient test coverage:
 3. Add tests to prevent regression
 4. Update related documentation
 
-### For Claude Code
+### For Coding Agents
 
 When working on this project:
 - **Check this file first** to understand known issues
