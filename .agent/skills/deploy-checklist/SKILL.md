@@ -1,5 +1,6 @@
 ---
 name: deploy-checklist
+description: Structured pre-deploy, deploy, and post-deploy checklist for shipping changes with explicit human approval gates.
 version: 2026-01-01
 triggers: ["deploy", "ship", "release", "go live"]
 tools: [bash]

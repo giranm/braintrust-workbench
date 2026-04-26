@@ -1,5 +1,6 @@
 ---
 name: memory-manager
+description: Memory maintenance workflow for reflecting on significant work, consolidating recurring patterns, and promoting durable lessons.
 version: 2026-01-01
 triggers: ["reflect", "remember", "distill", "what did I learn", "update memory", "compress memory"]
 tools: [memory_reflect, bash, git]
