@@ -1,5 +1,6 @@
 ---
 name: skillforge
+description: Create or extend repository skills with front matter, registration, memory logging, and a self-rewrite hook.
 version: 2026-01-01
 triggers: ["create skill", "new skill", "build skill", "new capability"]
 tools: [bash, memory_reflect, git]
