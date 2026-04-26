@@ -140,7 +140,7 @@ This document tracks implementation decisions, technical notes, and progress dur
 ### Unit Tests
 - **Coverage**: [Coverage percentage or areas covered]
 - **Location**: `tests/`
-- **Run with**: `uv run pytest` or `npm test`
+- **Run with**: `uv run pytest` or `pnpm test`
 
 ### Braintrust Evaluations
 - **Eval suite**: [Description of eval approach]
@@ -191,7 +191,7 @@ python = "3.12"  # or node = "20"
 uv add [package-name]
 
 # TypeScript
-npm install [package-name]
+pnpm add [package-name]
 ```
 
 ---

@@ -66,12 +66,12 @@ cp .env.example .env
 uv run python src/main.py
 
 # For TypeScript projects
-npm install
+pnpm install
 cp .env.example .env
 # Edit .env with your API keys
 
 # Run the demo
-npm run dev
+pnpm dev
 ```
 
 ## Project Structure
@@ -138,7 +138,7 @@ See `make help` for all available commands.
 uv run python src/main.py
 
 # TypeScript
-npm run dev
+pnpm dev
 ```
 
 #### Evaluations
@@ -157,7 +157,7 @@ uv run python src/eval.py
 uv run pytest
 
 # TypeScript
-npm test
+pnpm test
 ```
 
 ## How It Works

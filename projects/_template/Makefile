@@ -71,7 +71,7 @@ test-backend: ## Run backend tests
 	docker compose exec backend pytest
 
 test-frontend: ## Run frontend tests
-	docker compose exec frontend npm test
+	docker compose exec frontend pnpm test
 
 # Maintenance
 clean: ## Remove containers, volumes, and images
@@ -106,19 +106,19 @@ local-install-backend: ## Install backend dependencies locally with UV
 	cd backend && uv sync
 
 local-install-frontend: ## Install frontend dependencies locally
-	cd frontend && npm install
+	cd frontend && pnpm install
 
 local-run-backend: ## Run backend locally
 	cd backend && uv run uvicorn src.main:app --reload
 
 local-run-frontend: ## Run frontend locally
-	cd frontend && npm run dev
+	cd frontend && pnpm dev
 
 local-test-backend: ## Run backend tests locally
 	cd backend && uv run pytest
 
 local-test-frontend: ## Run frontend tests locally
-	cd frontend && npm test
+	cd frontend && pnpm test
 
 # Database (if applicable)
 db-shell: ## Open database shell
