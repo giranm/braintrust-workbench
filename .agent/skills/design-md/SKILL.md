@@ -1,5 +1,6 @@
 ---
 name: design-md
+description: Use a root DESIGN.md file as the source of truth for visual tokens, component rules, and Google Stitch-aligned design system work.
 version: 2026-04-26
 triggers: ["DESIGN.md", "design.md", "Google Stitch", "Stitch", "design tokens", "design system", "visual design"]
 tools: [bash, memory_reflect]
