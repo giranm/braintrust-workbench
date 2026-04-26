@@ -1,0 +1,64 @@
+# Next.js Frontend Dockerfile
+# Multi-stage build for optimized production image
+
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN corepack enable
+
+# Copy package files
+COPY package.json ./
+
+# Install dependencies
+RUN pnpm install --no-frozen-lockfile
+
+# Stage 2: Builder
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN corepack enable
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application code
+COPY . .
+
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build Next.js application
+RUN pnpm build
+
+# Stage 3: Runner
+FROM node:20-alpine AS runner
+WORKDIR /app
+RUN corepack enable
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy necessary files from builder
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/public ./public
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Run Next.js
+CMD ["pnpm", "start"]
