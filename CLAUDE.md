@@ -1,5 +1,67 @@
 # Braintrust Workbench - Claude Code Guide
 
+## Agentic Stack
+
+This project uses the **agentic-stack** portable brain. All memory, skills,
+and protocols live in `.agent/`.
+
+### Session start — read in this order
+1. `.agent/AGENTS.md` — the map of the whole brain
+2. `.agent/memory/personal/PREFERENCES.md` — how the user works
+3. `.agent/memory/working/REVIEW_QUEUE.md` — pending lessons awaiting review
+4. `.agent/memory/semantic/LESSONS.md` — what we've already learned
+5. `.agent/protocols/permissions.md` — hard constraints, read before any tool call
+
+### Before every non-trivial action — recall first
+
+For any task involving **deploy**, **ship**, **release**, **migration**,
+**schema change**, **supabase**, **edge function**, **timestamp** /
+**timezone** / **date**, **failing test**, **debug**, **investigate**, or
+**refactor**, run recall FIRST and present the results before acting:
+
+```bash
+python3 .agent/tools/recall.py "<one-line description of what you're about to do>"
+```
+
+Show the output in a `Consulted lessons before acting:` block. If a surfaced
+lesson would be violated by your intended action, stop and explain why.
+
+### While working
+
+#### Skills
+Read `.agent/skills/_index.md` and load the full `SKILL.md` for any skill
+whose triggers match the task. Don't skip this — skills carry constraints
+the permissions file doesn't cover.
+
+#### Workspace
+Update `.agent/memory/working/WORKSPACE.md` when:
+- You start a new task (write the goal and first step)
+- Your hypothesis changes
+- You complete or abandon a task (clear it so the next session is clean)
+
+#### Brain state
+Quick overview any time:
+```bash
+python3 .agent/tools/show.py
+```
+
+#### Teaching the agent a new rule
+When you discover something that should never happen again:
+```bash
+python3 .agent/tools/learn.py "<the rule, phrased as a principle>" \
+    --rationale "<why — include the incident that taught you this>"
+```
+
+### Agentic stack rules
+- Never force push to `main`, `production`, or `staging`.
+- Never delete episodic or semantic memory entries — archive them.
+- Never modify `.agent/protocols/permissions.md` — only humans edit it.
+- Never hand-edit `.agent/memory/semantic/LESSONS.md` — use `graduate.py`.
+- If `REVIEW_QUEUE.md` shows pending > 10 or oldest > 7 days, review
+  candidates before starting substantive work.
+
+---
+
 ## Project Overview
 
 This repository is a collection of independent projects that showcase **Braintrust** (Evals & Observability) capabilities. Each project in the `projects/` directory is isolated with its own environment and dependencies.
@@ -8,6 +70,7 @@ This repository is a collection of independent projects that showcase **Braintru
 
 ```
 braintrust-workbench/
+├── .agent/                  # Agentic-stack brain (memory, skills, protocols)
 ├── .claude/                 # Claude Code configuration
 ├── CLAUDE.md               # This file
 ├── README.md               # Public documentation
@@ -220,11 +283,11 @@ Each project has a `docs/` directory for development documentation:
 
 ### Why Document in Version Control?
 
-- ✅ Context persists across sessions
-- ✅ AI assistants (Claude Code/ChatGPT Codex etc) can reference it
-- ✅ Decisions are tracked with rationale
-- ✅ Issues and resolutions are recorded
-- ✅ Project history is preserved
+- Context persists across sessions
+- AI assistants (Claude Code/ChatGPT Codex etc) can reference it
+- Decisions are tracked with rationale
+- Issues and resolutions are recorded
+- Project history is preserved
 
 ## Best Practices
 
