@@ -173,6 +173,7 @@ def setup_dataset() -> None:
 
     for i, scenario in enumerate(scenarios):
         dataset.insert(
+            id=f"scenario-{i}",
             input=scenario["input"],
             expected=scenario["expected"],
             metadata={"scenario_index": i},
